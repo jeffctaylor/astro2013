@@ -1,6 +1,9 @@
 # I'm adding this comment from github in my browser.
 # Let's see if it shows up on the Mac, and on my phone.
 
+# And now I'm making this comment on the Mac.
+# Let's see if I can commit it and get it to show up on GitHub.
+
 import astropy
 import glob
 import pyfits
