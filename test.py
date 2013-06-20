@@ -13,10 +13,23 @@ all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAW
 
 # Lists to store information
 all_wavelengths = []
+all_comments = []
 
 for i in all_files:
-        wavelength = fits.getval(i, 'WAVELENG')
+        print("Processing " + i)
+        hdulist = fits.open(i)
+        wavelength = hdulist[0].header['waveleng']
+        comment = hdulist[0].header.comments['waveleng']
         all_wavelengths.append(wavelength)
+        all_comments.append(comment)
 
-for i in all_wavelengths:
-        print("Wavelength only: " + str(i))
+        print("\tWavelength: " + `wavelength`)
+        print("\tComment: " + `comment`)
+
+        hdulist.close()
+
+#for i in all_wavelengths:
+        #print("Wavelength value + comment: " + str(i))
+
+#for i in all_comments:
+        #print("Comment only: " + str(i))
