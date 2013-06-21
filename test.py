@@ -9,7 +9,7 @@ import glob
 from astropy.io import fits
 
 # Grab all of the .fits and .fit files
-all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAW/*.fit*')
+all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAWb/*.fit*')
 
 # Lists to store information
 all_wavelengths = []
