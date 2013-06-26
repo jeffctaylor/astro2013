@@ -4,14 +4,19 @@
 #   and nlines values, since Sophia has said it's best that the user provides these
 #   values.
 
-#things to import regarding pyraf & iraf
-
+# Simple function to determine whether s is a number or not
 def is_number(s):
     try:
         float(s)
         return True
     except ValueError:
         return False
+
+# Display usage information in case of a command line error
+def print_usage():
+    print("Usage: " + sys.argv[0] + " --ncols <ncols> --lines <nlines> --image <image file>")
+
+#things to import regarding pyraf & iraf
 
 import pyraf
 from pyraf import iraf
@@ -24,6 +29,10 @@ from iraf import artdata, immatch, imcoords
 # getopt gives us some powerful command line processing tools
 import sys
 import getopt
+
+ncols_input = ""
+nlines_input = ""
+image_input = ""
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", ["ncols=", "nlines=", "image="])
@@ -41,9 +50,11 @@ for opt, arg in opts:
 # Now make sure that the values we have just grabbed from the command line are valid.
 # ncols and nlines should both be numbers...
 if (not is_number(ncols_input)):
+    print_usage()
     print("ncols must be a number.")
     sys.exit()
 if (not is_number(nlines_input)):
+    print_usage()
     print("nlines must be a number.")
     sys.exit()
 
@@ -51,10 +62,9 @@ if (not is_number(nlines_input)):
 try:
    with open(image_input): pass
 except IOError:
-   print("The specifiied image is not a file.")
-   sys.exit()
-
-sys.exit(2)
+    print_usage()
+    print("The specifiied image is not a file.")
+    sys.exit()
 
 #First we create an artificial fits image
 # unlearn some iraf tasks
