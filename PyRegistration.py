@@ -94,4 +94,4 @@ iraf.ccsetwcs(images="apixelgrid.fits", database="", solution="", xref=50., yref
 iraf.unlearn('wregister')
 #register the sciense fits image
 
-iraf.wregister(input="scitest.fits", reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
+iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
