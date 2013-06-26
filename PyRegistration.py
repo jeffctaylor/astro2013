@@ -4,18 +4,6 @@
 #   and nlines values, since Sophia has said it's best that the user provides these
 #   values.
 
-# Simple function to determine whether s is a number or not
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
-# Display usage information in case of a command line error
-def print_usage():
-    print("Usage: " + sys.argv[0] + " --ncols <ncols> --lines <nlines> --image <image file>")
-
 #things to import regarding pyraf & iraf
 
 import pyraf
@@ -29,6 +17,18 @@ from iraf import artdata, immatch, imcoords
 # getopt gives us some powerful command line processing tools
 import sys
 import getopt
+
+# Simple function to determine whether s is a number or not
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+# Display usage information in case of a command line error
+def print_usage():
+    print("Usage: " + sys.argv[0] + " --ncols <ncols> --lines <nlines> --image <image file>")
 
 ncols_input = ""
 nlines_input = ""
