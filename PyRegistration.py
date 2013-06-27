@@ -18,6 +18,10 @@ from iraf import artdata, immatch, imcoords
 import sys
 import getopt
 
+from astropy.io import fits
+from astropy.nddata import NDData
+import numpy as np
+
 # Simple function to determine whether s is a number or not
 def is_number(s):
     try:
@@ -28,12 +32,13 @@ def is_number(s):
 
 # Display usage information in case of a command line error
 def print_usage():
-    print("Usage: " + sys.argv[0] + " --ncols <ncols> --lines <nlines> --image <image file>")
+    print("Usage: " + sys.argv[0] + " --ncols <ncols> --nlines <nlines> --image <image file>")
 
 ncols_input = ""
 nlines_input = ""
 image_input = ""
 
+# Parse the command line options
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", ["ncols=", "nlines=", "image="])
 except getopt.GetoptError:
@@ -95,3 +100,16 @@ iraf.unlearn('wregister')
 #register the sciense fits image
 
 iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
+
+# Now read the output image data and header into an NDData object
+hdulist = fits.open('scitestout.fits')
+d1 = NDData(hdulist[0].data, meta=hdulist[0].header)
+hdulist.close()
+
+print("Data: " + `d1.data`)
+print("Data shape" + `d1.shape`)
+print("Sample header value: " + d1.meta['OBJECT'])
+
+# Now try to change a header value
+d1.meta['OBJECT'] = 'NGC 1569'
+print("Changed header value: " + d1.meta['OBJECT'])
