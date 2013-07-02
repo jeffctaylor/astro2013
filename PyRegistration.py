@@ -20,6 +20,7 @@ import getopt
 
 from astropy.io import fits
 from astropy.nddata import NDData
+from astropy import units as u
 import numpy as np
 
 # Simple function to determine whether s is a number or not
@@ -71,6 +72,25 @@ except IOError:
     print("The specifiied image is not a file.")
     sys.exit()
 
+# Read the input image data and header into an NDData object
+hdulist = fits.open(image_input)
+d1 = NDData(hdulist[0].data, meta=hdulist[0].header)
+hdulist.close()
+
+print("Sample header value: " + d1.meta['OBJECT'])
+lngref_input = d1.meta['CRVAL1']
+latref_input = d1.meta['CRVAL2']
+xmag_input = d1.meta['CDELT1']
+ymag_input = d1.meta['CDELT2']
+
+print("lngref: " + `lngref_input`)
+print("latref: " + `latref_input`)
+print("xmag: " + `xmag_input` + "; converted: " + `u.deg.to(u.arcsec, xmag_input)`)
+print("ymag: " + `ymag_input` + "; converted: " + `u.deg.to(u.arcsec, ymag_input)`)
+xmag_input = u.deg.to(u.arcsec, xmag_input)
+ymag_input = u.deg.to(u.arcsec, ymag_input)
+print("xmag: " + `xmag_input`)
+
 #First we create an artificial fits image
 # unlearn some iraf tasks
 
@@ -87,11 +107,13 @@ artdata.mkpattern(input="apixelgrid.fits", output="apixelgrid.fits", pattern="co
 iraf.unlearn('ccsetwcs')
 #tag the desired WCS in the fake image "apixel.fits"
 
-iraf.ccsetwcs(images="apixelgrid.fits", database="", solution="", xref=ncols_input/2.0, yref=nlines_input/2.0, xmag=1.5, ymag=1.5, xrotati=0.,yrotati=0.,lngref=4.5133861111111, latref=64.849611111111, lngunit="hours", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
+iraf.ccsetwcs(images="apixelgrid.fits", database="", solution="", xref=ncols_input/2.0, yref=nlines_input/2.0, xmag=xmag_input, ymag=ymag_input, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
 #note that the "xref" and "yref" are actually half the above "ncols", "nlines", respectively, so that we center each image
 #note also that "xmag" and "ymag" is the pixel-scale, which in the current step ought to be the same as the native pixel-scale of the input image, for each input image - so we check the corresponding header value in each image
 #note that "lngref" and "latref" can be grabbed by the fits header, it is actually the center of the target (e.g. ngc1569)
 #note that we should make sure that the coordinate system is in coosyst="j2000" by checking the header info, otherwise we need to adjust that
+# As of 2013-07-02, xmag, yman, lngref, and latref are all being obtained from the
+# header of the input image
 
 # Then, register the fits file of interest to the WCS of the fake fits file
 # unlearn some iraf tasks
@@ -102,14 +124,16 @@ iraf.unlearn('wregister')
 iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
 
 # Now read the output image data and header into an NDData object
-hdulist = fits.open('scitestout.fits')
-d1 = NDData(hdulist[0].data, meta=hdulist[0].header)
-hdulist.close()
+#hdulist = fits.open('scitestout.fits')
+#d2 = NDData(hdulist[0].data, meta=hdulist[0].header)
+#hdulist.close()
 
-print("Data: " + `d1.data`)
-print("Data shape" + `d1.shape`)
-print("Sample header value: " + d1.meta['OBJECT'])
+#print("Data: " + `d2.data`)
+#print("Data shape" + `d2.shape`)
+#print("Sample header value: " + d2.meta['OBJECT'])
+#print("Headers: " + `d2.meta`)
+#print("Sample comment value: " + d2.meta.comments['OBJECT'])
 
 # Now try to change a header value
-d1.meta['OBJECT'] = 'NGC 1569'
-print("Changed header value: " + d1.meta['OBJECT'])
+#d2.meta['OBJECT'] = 'NGC 1569'
+#print("Changed header value: " + d2.meta['OBJECT'])
