@@ -3,6 +3,7 @@
 #   For starters: the location of the image (so that it's not hardcoded) and the ncols
 #   and nlines values, since Sophia has said it's best that the user provides these
 #   values.
+# A change from branch test1
 
 #things to import regarding pyraf & iraf
 
