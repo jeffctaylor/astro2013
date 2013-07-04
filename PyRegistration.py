@@ -126,17 +126,24 @@ iraf.unlearn('wregister')
 
 iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
 
-# Now read the output image data and header into an NDData object
-#hdulist = fits.open('scitestout.fits')
-#d2 = NDData(hdulist[0].data, meta=hdulist[0].header)
-#hdulist.close()
+# Now read the output image data and header
+# Do it without NDData to see if comments can be preserved
+hdulist = fits.open('scitestout.fits')
+image_data = hdulist[0].data
+header = hdulist[0].header
+hdulist.close()
 
-#print("Data: " + `d2.data`)
-#print("Data shape" + `d2.shape`)
-#print("Sample header value: " + d2.meta['OBJECT'])
-#print("Headers: " + `d2.meta`)
-#print("Sample comment value: " + d2.meta.comments['OBJECT'])
+#print("Data: " + `image_data`)
+print("Data shape" + `image_data.shape`)
+print("Sample header value: " + header['OBJECT'])
+#print("Headers: " + `header`)
+print("Sample comment value: " + header.comments['OBJECT'])
 
 # Now try to change a header value
-#d2.meta['OBJECT'] = 'NGC 1569'
-#print("Changed header value: " + d2.meta['OBJECT'])
+header['OBJECT'] = ('NGC 1569', 'Name of the object observed, simplified')
+print("Changed header value: " + header['OBJECT'])
+print("Changed comment value: " + header.comments['OBJECT'])
+
+# Now try to save all of the image data and headers as a new FITS image
+hdu = fits.PrimaryHDU(image_data, header)
+hdu.writeto('new.fits')
