@@ -21,6 +21,8 @@ from iraf import artdata, immatch, imcoords
 import sys
 import getopt
 
+import glob
+
 from astropy.io import fits
 from astropy.nddata import NDData
 from astropy import units as u
@@ -126,24 +128,39 @@ iraf.unlearn('wregister')
 
 iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
 
-# Now read the output image data and header
-# Do it without NDData to see if comments can be preserved
-hdulist = fits.open('scitestout.fits')
-image_data = hdulist[0].data
-header = hdulist[0].header
-hdulist.close()
+# Try reading in multiple FITS images and playing with them
 
-#print("Data: " + `image_data`)
-print("Data shape" + `image_data.shape`)
-print("Sample header value: " + header['OBJECT'])
-#print("Headers: " + `header`)
-print("Sample comment value: " + header.comments['OBJECT'])
+# Grab all of the .fits and .fit files
+all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAWb/*.fit*')
+
+# Lists to store information
+image_data = []
+headers = []
+
+for i in all_files:
+    print("Opening " + i)
+    hdulist = fits.open(i)
+    image = hdulist[0].data
+    header = hdulist[0].header
+    hdulist.close()
+    image_data.append(image)
+    headers.append(header)
+
+for i in range(0, len(image_data)):
+    #print("Data: " + `image_data`)
+    print("Data shape" + `image_data[i].shape`)
+    print("Sample header value: " + `headers[i]['WAVELENG']`)
+    #print("Headers: " + `header`)
+    print("Sample comment value: " + `headers[i].comments['WAVELENG']`)
+    
+    # Now try to save all of the image data and headers as a new FITS image
+    hdu = fits.PrimaryHDU(image_data[i], headers[i])
+    hdu.writeto(`i` + '.fits')
+
+sys.exit()
 
 # Now try to change a header value
 header['OBJECT'] = ('NGC 1569', 'Name of the object observed, simplified')
 print("Changed header value: " + header['OBJECT'])
 print("Changed comment value: " + header.comments['OBJECT'])
 
-# Now try to save all of the image data and headers as a new FITS image
-hdu = fits.PrimaryHDU(image_data, header)
-hdu.writeto('new.fits')
