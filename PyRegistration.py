@@ -40,6 +40,20 @@ def is_number(s):
 def print_usage():
     print("Usage: " + sys.argv[0] + " --ncols <ncols> --nlines <nlines> --image <image file>")
 
+# I think theres a names() function somewhere in astropy.units that might help here
+def wavelength_to_microns(wavelength, unit):
+    if (unit in u.micron.names or unit in u.um.names):
+        return_value = float(wavelength)
+    #elif (unit in ('Angstrom', 'angstrom', 'AA', 'Angstroms', 'angstroms')):
+    elif (unit in u.angstrom.names):
+        return_value = u.angstrom.to(u.micron, float(wavelength))
+    # This is a placeholder default value for now - it is not intended to be used
+    # for real!
+    else:
+        return_value = 1
+
+    return return_value
+
 ncols_input = ""
 nlines_input = ""
 image_input = ""
@@ -148,14 +162,18 @@ for i in all_files:
 
 for i in range(0, len(image_data)):
     #print("Data: " + `image_data`)
-    print("Data shape" + `image_data[i].shape`)
-    print("Sample header value: " + `headers[i]['WAVELENG']`)
-    #print("Headers: " + `header`)
-    print("Sample comment value: " + `headers[i].comments['WAVELENG']`)
+    #print("Data shape" + `image_data[i].shape`)
+    wavelength = headers[i]['WAVELENG']
+    wavelength_units = headers[i].comments['WAVELENG']
+    print("Wavelength: " + `wavelength` + ' ' + `wavelength_units`)
+    #print("Wavelength units: " + `wavelength_units`)
+    wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
+    print("Wavelenths in microns: " + `wavelength_microns`)
     
-    # Now try to save all of the image data and headers as a new FITS image
-    hdu = fits.PrimaryHDU(image_data[i], headers[i])
-    hdu.writeto(`i` + '.fits')
+    # Now try to save all of the image data and headers as a new FITS image.
+    # This was just a test - no need to actually do it right now, or yet.
+    #hdu = fits.PrimaryHDU(image_data[i], headers[i])
+    #hdu.writeto(`i` + '.fits')
 
 sys.exit()
 
