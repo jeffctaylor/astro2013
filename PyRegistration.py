@@ -40,11 +40,11 @@ def is_number(s):
 def print_usage():
     print("Usage: " + sys.argv[0] + " --ncols <ncols> --nlines <nlines> --image <image file>")
 
-# I think theres a names() function somewhere in astropy.units that might help here
+# This function will convert the input wavelength units into microns so that we only
+# have to deal with a single unit.
 def wavelength_to_microns(wavelength, unit):
     if (unit in u.micron.names or unit in u.um.names):
         return_value = float(wavelength)
-    #elif (unit in ('Angstrom', 'angstrom', 'AA', 'Angstroms', 'angstroms')):
     elif (unit in u.angstrom.names):
         return_value = u.angstrom.to(u.micron, float(wavelength))
     # This is a placeholder default value for now - it is not intended to be used
@@ -160,15 +160,19 @@ for i in all_files:
     image_data.append(image)
     headers.append(header)
 
-for i in range(0, len(image_data)):
+#images_with_headers = sorted(zip(image_data, headers), key=lambda wavelength: float(headers['WAVELENG']))
+images_with_headers_unsorted = zip(image_data, headers)
+images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELENG'])
+
+for i in range(0, len(images_with_headers)):
     #print("Data: " + `image_data`)
     #print("Data shape" + `image_data[i].shape`)
-    wavelength = headers[i]['WAVELENG']
-    wavelength_units = headers[i].comments['WAVELENG']
+    wavelength = images_with_headers[i][1]['WAVELENG']
+    wavelength_units = images_with_headers[i][1].comments['WAVELENG']
     print("Wavelength: " + `wavelength` + ' ' + `wavelength_units`)
     #print("Wavelength units: " + `wavelength_units`)
     wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
-    print("Wavelenths in microns: " + `wavelength_microns`)
+    print("Wavelengths in microns: " + `wavelength_microns`)
     
     # Now try to save all of the image data and headers as a new FITS image.
     # This was just a test - no need to actually do it right now, or yet.
@@ -181,4 +185,3 @@ sys.exit()
 header['OBJECT'] = ('NGC 1569', 'Name of the object observed, simplified')
 print("Changed header value: " + header['OBJECT'])
 print("Changed comment value: " + header.comments['OBJECT'])
-
