@@ -148,31 +148,42 @@ iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestou
 all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAWb/*.fit*')
 
 # Lists to store information
+# We may need to another list to store filenames. This would enable us to create
+# output filenames based on the input filenames; e.g. for image1.fits, we could output
+# files like image1_registered.fits, image1_convolved.fits, image1_resampled.fits, etc.
+# First check to make sure that this information is not already in the header somewhere.
+# Actually, it can be found using hdulist.filename(), but it's not actually in the
+# header. So another list seems like it would be the best way to retain it.
 image_data = []
 headers = []
 
 for i in all_files:
-    print("Opening " + i)
     hdulist = fits.open(i)
     image = hdulist[0].data
     header = hdulist[0].header
     hdulist.close()
+    wavelength = header['WAVELENG']
+    wavelength_units = header.comments['WAVELENG']
+    wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
+    #print("Wavelength " + `wavelength_microns` + "; Sample image value: " + `image[30][30]`)
+    header['WAVELENG'] = (wavelength_microns, 'microns')
     image_data.append(image)
     headers.append(header)
 
-#images_with_headers = sorted(zip(image_data, headers), key=lambda wavelength: float(headers['WAVELENG']))
+# Sort the lists by their WAVELENG value
 images_with_headers_unsorted = zip(image_data, headers)
 images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELENG'])
 
+#print("----------\nAfter sorting\n----------")
 for i in range(0, len(images_with_headers)):
     #print("Data: " + `image_data`)
     #print("Data shape" + `image_data[i].shape`)
     wavelength = images_with_headers[i][1]['WAVELENG']
     wavelength_units = images_with_headers[i][1].comments['WAVELENG']
-    print("Wavelength: " + `wavelength` + ' ' + `wavelength_units`)
+    #print("Wavelength: " + `wavelength` + ' ' + `wavelength_units` + "; Sample image value: " + `images_with_headers[i][0][30][30]`)
     #print("Wavelength units: " + `wavelength_units`)
-    wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
-    print("Wavelengths in microns: " + `wavelength_microns`)
+    #wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
+    #print("Wavelengths in microns: " + `wavelength_microns`)
     
     # Now try to save all of the image data and headers as a new FITS image.
     # This was just a test - no need to actually do it right now, or yet.
@@ -180,8 +191,3 @@ for i in range(0, len(images_with_headers)):
     #hdu.writeto(`i` + '.fits')
 
 sys.exit()
-
-# Now try to change a header value
-header['OBJECT'] = ('NGC 1569', 'Name of the object observed, simplified')
-print("Changed header value: " + header['OBJECT'])
-print("Changed comment value: " + header.comments['OBJECT'])
