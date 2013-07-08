@@ -54,6 +54,8 @@ def wavelength_to_microns(wavelength, unit):
 
     return return_value
 
+# A function to determine which instrument was used. This is done by checking certain
+# keywords in the FITS header.
 def get_instrument(header):
     instrument = ''
     # Check for INSTRUME keyword first
@@ -72,6 +74,21 @@ def get_instrument(header):
         sys.exit()
 
     return instrument
+
+def flux_to_jy_per_pixel(header, instrument):
+    if (instrument == 'IRAC'):
+        print("IRAC; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
+    elif (instrument == 'MIPS'):
+        print("MIPS; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
+    elif (instrument == 'GALEX'):
+        print("GALEX; wavelength: " + `header['WAVELENG']`)
+    elif (instrument == '2MASS'):
+        print("2MASS; wavelength: " + `header['WAVELENG']` + "; FILTER: " + `header['FILTER']`)
+    elif (instrument == 'PACS'):
+        print("PACS; wavelength: " + `header['WAVELENG']` + "; BUNIT: " + `header['BUNIT']`)
+    elif (instrument == 'SPIRE'):
+        print("SPIRE; wavelength: " + `header['WAVELENG']` + "; BUNIT: " + `header['BUNIT']`)
+        
 
 ncols_input = ""
 nlines_input = ""
@@ -204,7 +221,10 @@ for i in range(0, len(images_with_headers)):
     #wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
     #print("Wavelengths in microns: " + `wavelength_microns`)
     
-    print("Instrument: " + get_instrument(images_with_headers[i][1]))
+    instrument = get_instrument(images_with_headers[i][1])
+    print("Instrument: " + instrument)
+
+    flux_to_jy_per_pixel(images_with_headers[i][1], instrument)
 
     # Now try to save all of the image data and headers as a new FITS image.
     # This was just a test - no need to actually do it right now, or yet.
