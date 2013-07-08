@@ -26,6 +26,7 @@ import glob
 from astropy.io import fits
 from astropy.nddata import NDData
 from astropy import units as u
+from astropy import constants
 import numpy as np
 
 # Simple function to determine whether s is a number or not
@@ -75,20 +76,63 @@ def get_instrument(header):
 
     return instrument
 
-def flux_to_jy_per_pixel(header, instrument):
+# A function to obtain the factor that is necessary to convert an image's flux units
+# to Jy/pixel.
+def get_conversion_factor(header, instrument):
+    # Give a default value that can't possibly be valid; if this is still the value
+    # after running through all of the possible cases, then an error has occurred.
+    conversion_factor = 0
+
     if (instrument == 'IRAC'):
         print("IRAC; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
+        pixelscale = header['PXSCAL1']
+        print("Pixel scale: " + `pixelscale`)
+        # This is a hardcoded value from what Sophia gave me.
+        # I would like to see if we could also obtain this from units.
+        # MJy/sr to Jy/pixel
+        conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
+
     elif (instrument == 'MIPS'):
         print("MIPS; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
+        pixelscale = header['PLTSCALE']
+        print("Pixel scale: " + `pixelscale`)
+        conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
+
     elif (instrument == 'GALEX'):
         print("GALEX; wavelength: " + `header['WAVELENG']`)
+        print("Speed of light: " + `constants.c.value`)
+        fv = 0
+        # I am using a < comparison here to account for the possibility that the given
+        # wavelength is not EXACTLY 1520 AA or 2310 AA
+        if (header['WAVELENG'] < 0.2): 
+            fv = 1.40 * 10**(-15)
+        else:
+            fv = 2.06 * 10**(-16)
+        # It is possible that the wavelength here should be in Angstroms - confirm.
+        conversion_factor = (fv * constants.c.value) / (header['WAVELENG']**2)
+
     elif (instrument == '2MASS'):
         print("2MASS; wavelength: " + `header['WAVELENG']` + "; FILTER: " + `header['FILTER']`)
+        print("MAGZP: " + `header['MAGZP']`)
+        fvega = 0
+        if (header['FILTER'] == 'j'):
+            fvega = 1594
+        elif (header['FILTER'] == 'h'):
+            fvega = 1024
+        elif (header['FILTER'] == 'k'):
+            fvega = 666.7
+        conversion_factor = fvega * 10**(-0.4 * header['MAGZP'])
+
     elif (instrument == 'PACS'):
         print("PACS; wavelength: " + `header['WAVELENG']` + "; BUNIT: " + `header['BUNIT']`)
+        conversion_factor = 1;
+
     elif (instrument == 'SPIRE'):
         print("SPIRE; wavelength: " + `header['WAVELENG']` + "; BUNIT: " + `header['BUNIT']`)
-        
+        pixelscale = header['CDELT2']
+        # Need some sample files before I can do more here
+    
+    return conversion_factor
 
 ncols_input = ""
 nlines_input = ""
@@ -146,8 +190,6 @@ xmag_input = u.deg.to(u.arcsec, xmag_input)
 ymag_input = u.deg.to(u.arcsec, ymag_input)
 #print("xmag: " + `xmag_input`)
 
-# Try reading in multiple FITS images and playing with them
-
 # Grab all of the .fits and .fit files
 all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAWb/*.fit*')
 
@@ -192,7 +234,8 @@ for i in range(0, len(images_with_headers)):
     instrument = get_instrument(images_with_headers[i][1])
     print("Instrument: " + instrument)
 
-    flux_to_jy_per_pixel(images_with_headers[i][1], instrument)
+    conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
+    print("Conversion factor: " + `conversion_factor`)
 
     # Now try to save all of the image data and headers as a new FITS image.
     # This was just a test - no need to actually do it right now, or yet.
