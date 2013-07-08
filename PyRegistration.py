@@ -54,6 +54,25 @@ def wavelength_to_microns(wavelength, unit):
 
     return return_value
 
+def get_instrument(header):
+    instrument = ''
+    # Check for INSTRUME keyword first
+    if ('INSTRUME' in header):
+        instrument = header['INSTRUME']
+    # Then check for an empty string in the 'BUNIT' keyword
+    elif ('BUNIT' in header):
+        if (header['BUNIT'] == '' or header['BUNIT'].isspace()):
+            instrument = 'GALEX'
+    # Finally, check to see if the 'FILTER' keyword is 'j', h', or 'k'
+    elif ('FILTER' in header):
+        if (header['FILTER'].lower() in ('j', 'h', 'k')):
+            instrument = '2MASS'
+    else:
+        print("could not determine instrument")
+        sys.exit()
+
+    return instrument
+
 ncols_input = ""
 nlines_input = ""
 image_input = ""
@@ -185,6 +204,8 @@ for i in range(0, len(images_with_headers)):
     #wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
     #print("Wavelengths in microns: " + `wavelength_microns`)
     
+    print("Instrument: " + get_instrument(images_with_headers[i][1]))
+
     # Now try to save all of the image data and headers as a new FITS image.
     # This was just a test - no need to actually do it right now, or yet.
     #hdu = fits.PrimaryHDU(image_data[i], headers[i])
