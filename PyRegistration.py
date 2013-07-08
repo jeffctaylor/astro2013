@@ -100,16 +100,15 @@ def get_conversion_factor(header, instrument):
 
     elif (instrument == 'GALEX'):
         print("GALEX; wavelength: " + `header['WAVELENG']`)
-        print("Speed of light: " + `constants.c.value`)
-        fv = 0
+        print("Speed of light: " + `constants.c.to('um/s').value`)
+        f_lambda_con = 0
         # I am using a < comparison here to account for the possibility that the given
         # wavelength is not EXACTLY 1520 AA or 2310 AA
         if (header['WAVELENG'] < 0.2): 
-            fv = 1.40 * 10**(-15)
+            f_lambda_con = 1.40 * 10**(-15)
         else:
-            fv = 2.06 * 10**(-16)
-        # It is possible that the wavelength here should be in Angstroms - confirm.
-        conversion_factor = (fv * constants.c.value) / (header['WAVELENG']**2)
+            f_lambda_con = 2.06 * 10**(-16)
+        conversion_factor = (10**23 * f_lambda_con * header['WAVELENG']**2) / (constants.c.to('um/s').value)
 
     elif (instrument == '2MASS'):
         print("2MASS; wavelength: " + `header['WAVELENG']` + "; FILTER: " + `header['FILTER']`)
