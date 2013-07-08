@@ -62,13 +62,13 @@ def get_instrument(header):
     # Check for INSTRUME keyword first
     if ('INSTRUME' in header):
         instrument = header['INSTRUME']
-    # Then check for an empty string in the 'BUNIT' keyword
-    elif ('BUNIT' in header):
-        if (header['BUNIT'] == '' or header['BUNIT'].isspace()):
+    # Then check for 'galex' in the INF0001 keyword
+    elif ('INF0001' in header):
+        if ('galex' in header['INF0001']):
             instrument = 'GALEX'
-    # Finally, check to see if the 'FILTER' keyword is 'j', h', or 'k'
-    elif ('FILTER' in header):
-        if (header['FILTER'].lower() in ('j', 'h', 'k')):
+    # Finally, check to see if the 'ORIGIN' keyword has a value of '2MASS'
+    elif ('ORIGIN' in header):
+        if (header['ORIGIN'] == '2MASS'):
             instrument = '2MASS'
     else:
         print("could not determine instrument")
@@ -123,15 +123,32 @@ def get_conversion_factor(header, instrument):
         conversion_factor = fvega * 10**(-0.4 * header['MAGZP'])
 
     elif (instrument == 'PACS'):
-        print("PACS; wavelength: " + `header['WAVELENG']` + "; BUNIT: " + `header['BUNIT']`)
+        print("PACS; wavelength: " + `header['WAVELENG']`)
         conversion_factor = 1;
 
     elif (instrument == 'SPIRE'):
-        print("SPIRE; wavelength: " + `header['WAVELENG']` + "; BUNIT: " + `header['BUNIT']`)
+        print("SPIRE; wavelength: " + `header['WAVELENG']`)
         pixelscale = header['CDELT2']
         # Need some sample files before I can do more here
     
     return conversion_factor
+
+# A function to allow wavelength values to be obtained from a number of different
+# header keywords
+def get_wavelength(header):
+    wavelength = 0
+    wavelength_units = ''
+    if ('WAVELENG' in header):
+        wavelength = header['WAVELENG']
+        wavelength_units = header.comments['WAVELENG']
+    elif ('WAVELNTH' in header):
+        wavelength = header['WAVELNTH']
+        wavelength_units = 'microns'
+    elif ('FILTER' in header):
+        wavelength = header['FILTER']
+        wavelength_units = 'microns'
+
+    return wavelength, wavelength_units
 
 ncols_input = ""
 nlines_input = ""
@@ -207,8 +224,9 @@ for i in all_files:
     image = hdulist[0].data
     header = hdulist[0].header
     hdulist.close()
-    wavelength = header['WAVELENG']
-    wavelength_units = header.comments['WAVELENG']
+    #wavelength = header['WAVELENG']
+    wavelength, wavelength_units = get_wavelength(header)
+    #wavelength_units = header.comments['WAVELENG']
     wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
     #print("Wavelength " + `wavelength_microns` + "; Sample image value: " + `image[30][30]`)
     header['WAVELENG'] = (wavelength_microns, 'microns')
