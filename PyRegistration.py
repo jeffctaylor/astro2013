@@ -86,23 +86,23 @@ def get_conversion_factor(header, instrument):
     conversion_factor = 0
 
     if (instrument == 'IRAC'):
-        print("IRAC; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
+        print("Instrument: IRAC; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
         pixelscale = header['PXSCAL1']
-        print("Pixel scale: " + `pixelscale`)
+        #print("Pixel scale: " + `pixelscale`)
         # This is a hardcoded value from what Sophia gave me.
         # I would like to see if we could also obtain this from units.
         # MJy/sr to Jy/pixel
         conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
 
     elif (instrument == 'MIPS'):
-        print("MIPS; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
+        print("Instrument: MIPS; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
         pixelscale = header['PLTSCALE']
-        print("Pixel scale: " + `pixelscale`)
+        #print("Pixel scale: " + `pixelscale`)
         conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
 
     elif (instrument == 'GALEX'):
-        print("GALEX; wavelength: " + `header['WAVELENG']`)
-        print("Speed of light: " + `constants.c.to('um/s').value`)
+        print("Instrument: GALEX; wavelength: " + `header['WAVELENG']`)
+        #print("Speed of light: " + `constants.c.to('um/s').value`)
         f_lambda_con = 0
         # I am using a < comparison here to account for the possibility that the given
         # wavelength is not EXACTLY 1520 AA or 2310 AA
@@ -113,8 +113,8 @@ def get_conversion_factor(header, instrument):
         conversion_factor = (10**23 * f_lambda_con * header['WAVELENG']**2) / (constants.c.to('um/s').value)
 
     elif (instrument == '2MASS'):
-        print("2MASS; wavelength: " + `header['WAVELENG']` + "; FILTER: " + `header['FILTER']`)
-        print("MAGZP: " + `header['MAGZP']`)
+        print("Instrument: 2MASS; wavelength: " + `header['WAVELENG']` + "; FILTER: " + `header['FILTER']`)
+        #print("MAGZP: " + `header['MAGZP']`)
         fvega = 0
         if (header['FILTER'] == 'j'):
             fvega = 1594
@@ -125,7 +125,7 @@ def get_conversion_factor(header, instrument):
         conversion_factor = fvega * 10**(-0.4 * header['MAGZP'])
 
     elif (instrument == 'PACS'):
-        print("PACS; wavelength: " + `header['WAVELENG']`)
+        print("Instrument: PACS; wavelength: " + `header['WAVELENG']`)
         # Confirm that the data is already in Jy/pixel by checking the BUNIT header
         # keyword
         if ('BUNIT' in header):
@@ -134,7 +134,7 @@ def get_conversion_factor(header, instrument):
         conversion_factor = 1;
 
     elif (instrument == 'SPIRE'):
-        print("SPIRE; wavelength: " + `header['WAVELENG']` + "; pixelscale: " + `header['CDELT2']`)
+        print("Instrument: SPIRE; wavelength: " + `header['WAVELENG']`)
         pixelscale = header['CDELT2']
         wavelength = header['WAVELENG']
         if (wavelength == 250):
@@ -268,11 +268,12 @@ for i in range(0, len(images_with_headers)):
     #print("Wavelengths in microns: " + `wavelength_microns`)
     
     instrument = get_instrument(images_with_headers[i][1])
-    print("Instrument: " + instrument)
-    print("Filename: " + images_with_headers[i][2])
+    #print("Instrument: " + instrument)
+    #print("Filename: " + images_with_headers[i][2])
 
     conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
     print("Conversion factor: " + `conversion_factor`)
+    print
 
     # Now try to save all of the image data and headers as a new FITS image.
     # This was just a test - no need to actually do it right now, or yet.
