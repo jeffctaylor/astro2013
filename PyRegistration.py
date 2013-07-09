@@ -124,12 +124,23 @@ def get_conversion_factor(header, instrument):
 
     elif (instrument == 'PACS'):
         print("PACS; wavelength: " + `header['WAVELENG']`)
+        # Confirm that the data is already in Jy/pixel by checking the BUNIT header
+        # keyword
+        if ('BUNIT' in header):
+            if (header['BUNIT'].lower() != 'jy/pixel'):
+                print("Instrument is PACS, but Jy/pixel is not being used in BUNIT.")
         conversion_factor = 1;
 
     elif (instrument == 'SPIRE'):
-        print("SPIRE; wavelength: " + `header['WAVELENG']`)
+        print("SPIRE; wavelength: " + `header['WAVELENG']` + "; pixelscale: " + `header['CDELT2']`)
         pixelscale = header['CDELT2']
-        # Need some sample files before I can do more here
+        wavelength = header['WAVELENG']
+        if (wavelength == 250):
+            conversion_factor = (pixelscale**2) / 423
+        elif (wavelength == 350):
+            conversion_factor = (pixelscale**2) / 751
+        elif (wavelength == 500):
+            conversion_factor = (pixelscale**2) / 1587
     
     return conversion_factor
 
@@ -143,10 +154,10 @@ def get_wavelength(header):
         wavelength_units = header.comments['WAVELENG']
     elif ('WAVELNTH' in header):
         wavelength = header['WAVELNTH']
-        wavelength_units = 'microns'
+        wavelength_units = 'micron'
     elif ('FILTER' in header):
         wavelength = header['FILTER']
-        wavelength_units = 'microns'
+        wavelength_units = 'micron'
 
     return wavelength, wavelength_units
 
@@ -229,7 +240,7 @@ for i in all_files:
     #wavelength_units = header.comments['WAVELENG']
     wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
     #print("Wavelength " + `wavelength_microns` + "; Sample image value: " + `image[30][30]`)
-    header['WAVELENG'] = (wavelength_microns, 'microns')
+    header['WAVELENG'] = (wavelength_microns, 'micron')
     image_data.append(image)
     headers.append(header)
 
