@@ -23,6 +23,8 @@ import getopt
 
 import glob
 
+import os
+
 from astropy.io import fits
 from astropy.nddata import NDData
 from astropy import units as u
@@ -229,11 +231,16 @@ all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAW
 # header. So another list seems like it would be the best way to retain it.
 image_data = []
 headers = []
+filenames = []
 
 for i in all_files:
     hdulist = fits.open(i)
     image = hdulist[0].data
     header = hdulist[0].header
+    #filename = hdulist.filename()
+    # Strip the .fit or .fits extension from the filename so we can append things to it
+    # later on
+    filename = os.path.splitext(hdulist.filename())[0]
     hdulist.close()
     #wavelength = header['WAVELENG']
     wavelength, wavelength_units = get_wavelength(header)
@@ -243,9 +250,10 @@ for i in all_files:
     header['WAVELENG'] = (wavelength_microns, 'micron')
     image_data.append(image)
     headers.append(header)
+    filenames.append(filename)
 
 # Sort the lists by their WAVELENG value
-images_with_headers_unsorted = zip(image_data, headers)
+images_with_headers_unsorted = zip(image_data, headers, filenames)
 images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELENG'])
 
 #print("----------\nAfter sorting\n----------")
@@ -261,6 +269,7 @@ for i in range(0, len(images_with_headers)):
     
     instrument = get_instrument(images_with_headers[i][1])
     print("Instrument: " + instrument)
+    print("Filename: " + images_with_headers[i][2])
 
     conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
     print("Conversion factor: " + `conversion_factor`)
