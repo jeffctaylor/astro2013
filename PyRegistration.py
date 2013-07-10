@@ -238,8 +238,12 @@ filenames = []
 for i in all_files:
     hdulist = fits.open(i)
     #hdulist.info()
-    image = hdulist[0].data
     header = hdulist[0].header
+    # Check to see if the input file is a data cube before trying to grab the image data
+    if ('EXTEND' in header and 'DSETS___' in header):
+        image = hdulist[1].data
+    else:
+        image = hdulist[0].data
     #filename = hdulist.filename()
     # Strip the .fit or .fits extension from the filename so we can append things to it
     # later on
