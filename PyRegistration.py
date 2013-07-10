@@ -44,7 +44,10 @@ def is_number(s):
 # Function: print_usage()
 # This function sisplays usage information in case of a command line error
 def print_usage():
-    print("Usage: " + sys.argv[0] + " --ncols <ncols> --nlines <nlines> --image <image file> --angular_physical_size <angular_physical_size>")
+    print("Usage: " + sys.argv[0] + " --directory <directory> --angular_physical_size <angular_physical_size>")
+    print
+    print("directory is the path to the directory containing FITS files to work with")
+    print("angular_physical_size is the physical size to map to the object")
 
 # Function: wavelength_to_microns(wavelength, unit)
 # This function will convert the input wavelength units into microns so that we only
@@ -186,55 +189,56 @@ nlines_input = ""
 image_input = ""
 
 # Parse the command line options
-try:
-    opts, args = getopt.getopt(sys.argv[1:], "", ["ncols=", "nlines=", "image="])
-except getopt.GetoptError:
-    print("An error occurred. Check your parameters and try again.")
-    sys.exit(2)
-for opt, arg in opts:
-    if opt in ("--ncols"):
-        ncols_input = float(arg)
-    if opt in ("--nlines"):
-        nlines_input = float(arg)
-    if opt in ("--image"):
-        image_input= arg
+def parse_command_line():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "", ["ncols=", "nlines=", "image="])
+    except getopt.GetoptError:
+        print("An error occurred. Check your parameters and try again.")
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt in ("--ncols"):
+            ncols_input = float(arg)
+        if opt in ("--nlines"):
+            nlines_input = float(arg)
+        if opt in ("--image"):
+            image_input= arg
 
-# Now make sure that the values we have just grabbed from the command line are valid.
-# ncols and nlines should both be numbers...
-if (not is_number(ncols_input)):
-    print_usage()
-    print("ncols must be a number.")
-    sys.exit()
-if (not is_number(nlines_input)):
-    print_usage()
-    print("nlines must be a number.")
-    sys.exit()
+    # Now make sure that the values we have just grabbed from the command line are valid.
+    # ncols and nlines should both be numbers...
+    if (not is_number(ncols_input)):
+        print_usage()
+        print("ncols must be a number.")
+        sys.exit()
+    if (not is_number(nlines_input)):
+        print_usage()
+        print("nlines must be a number.")
+        sys.exit()
 
-# And the image should be a valid file.
-try:
-   with open(image_input): pass
-except IOError:
-    print_usage()
-    print("The specifiied image is not a file.")
-    sys.exit()
+    # And the image should be a valid file.
+    #try:
+    #with open(image_input): pass
+    #except IOError:
+        #print_usage()
+        #print("The specifiied image is not a file.")
+        #sys.exit()
 
 # Read the input image data and header into an NDData object
-hdulist = fits.open(image_input)
-d1 = NDData(hdulist[0].data, meta=hdulist[0].header)
-hdulist.close()
+#hdulist = fits.open(image_input)
+#d1 = NDData(hdulist[0].data, meta=hdulist[0].header)
+#hdulist.close()
 
 #print("Sample header value: " + d1.meta['OBJECT'])
-lngref_input = d1.meta['CRVAL1']
-latref_input = d1.meta['CRVAL2']
-xmag_input = d1.meta['CDELT1']
-ymag_input = d1.meta['CDELT2']
+#lngref_input = d1.meta['CRVAL1']
+#latref_input = d1.meta['CRVAL2']
+#xmag_input = d1.meta['CDELT1']
+#ymag_input = d1.meta['CDELT2']
 
 #print("lngref: " + `lngref_input`)
 #print("latref: " + `latref_input`)
 #print("xmag: " + `xmag_input` + "; converted: " + `u.deg.to(u.arcsec, xmag_input)`)
 #print("ymag: " + `ymag_input` + "; converted: " + `u.deg.to(u.arcsec, ymag_input)`)
-xmag_input = u.deg.to(u.arcsec, xmag_input)
-ymag_input = u.deg.to(u.arcsec, ymag_input)
+#xmag_input = u.deg.to(u.arcsec, xmag_input)
+#ymag_input = u.deg.to(u.arcsec, ymag_input)
 #print("xmag: " + `xmag_input`)
 
 # Grab all of the .fits and .fit files
