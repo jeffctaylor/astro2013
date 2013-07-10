@@ -282,6 +282,11 @@ for i in range(0, len(images_with_headers)):
     print("Conversion factor: " + `conversion_factor`)
     #print
 
+    # Do a conversion and save it as a new .fits file
+    converted_filename = images_with_headers[i][2] + "_converted.fits"
+    hdu = fits.PrimaryHDU(images_with_headers[i][0] * conversion_factor, images_with_headers[i][1])
+    hdu.writeto(converted_filename)
+
     #print("Image data: " + `images_with_headers[i][0]`)
     #print("Image data converted: " + `images_with_headers[i][0] * conversion_factor`)
 
