@@ -1,23 +1,23 @@
-#19th June 2013 - Image Registration: from IRAF  --->  PyRAF
-#2013-06-25 (JCT): What I want to do is add some command line parameters to this script.
-#   For starters: the location of the image (so that it's not hardcoded) and the ncols
-#   and nlines values, since Sophia has said it's best that the user provides these
-#   values.
-
-# A change from branch test1
-# A change in branch test2
+# imagecube
+# This package accepts FITS images from the user and delivers images that have been
+# converted to the same flux units, registered to a common world coordinate system
+# (WCS), convolved to a common resolution, and resampled to a common pixel scale
+# requesting the Nyquist sampling rate.
+# Each step can be run separately or as a whole.
+# The user should provide us with information regarding wavelength, pixel scale,
+# extension of the cube, instrument, physical size of the target, and WCS header 
+# information.
 
 #things to import regarding pyraf & iraf
 
 import pyraf
 from pyraf import iraf
-#the following line is extremely important in order to get the tasks running properly without dependence on iraf's "login.cl" - it can be created anywhere and I just chose the current working directory
+#the following line is to override the login.cl requirement of IRAF
 iraf.set(uparm='.')
 
 from iraf import noao, images
 from iraf import artdata, immatch, imcoords
 
-# getopt gives us some powerful command line processing tools
 import sys
 import getopt
 
@@ -31,7 +31,9 @@ from astropy import units as u
 from astropy import constants
 import numpy as np
 
-# Simple function to determine whether s is a number or not
+# Function: is_number(s)
+# This function simply checks whether the input value is a number or not.
+# It is used to check for proper input from the user.
 def is_number(s):
     try:
         float(s)
@@ -39,12 +41,15 @@ def is_number(s):
     except ValueError:
         return False
 
-# Display usage information in case of a command line error
+# Function: print_usage()
+# This function sisplays usage information in case of a command line error
 def print_usage():
-    print("Usage: " + sys.argv[0] + " --ncols <ncols> --nlines <nlines> --image <image file>")
+    print("Usage: " + sys.argv[0] + " --ncols <ncols> --nlines <nlines> --image <image file> --angular_physical_size <angular_physical_size>")
 
+# Function: wavelength_to_microns(wavelength, unit)
 # This function will convert the input wavelength units into microns so that we only
 # have to deal with a single unit.
+# NOTETOSELF: Other acceptable units: mm, m, Hz
 def wavelength_to_microns(wavelength, unit):
     if (unit in u.micron.names or unit in u.um.names):
         return_value = float(wavelength)
@@ -57,8 +62,12 @@ def wavelength_to_microns(wavelength, unit):
 
     return return_value
 
+# Function: get_instruments(header)
 # A function to determine which instrument was used. This is done by checking certain
 # keywords in the FITS header.
+# NOTETOSELF: other keywords may be acceptable
+# NOTETOSELF: pass the filenames to this function as well so we know which file we are
+# on in case of problems.
 def get_instrument(header):
     instrument = ''
     # Check for INSTRUME keyword first
@@ -73,13 +82,15 @@ def get_instrument(header):
         if (header['ORIGIN'] == '2MASS'):
             instrument = '2MASS'
     else:
-        print("could not determine instrument")
+        print("could not determine instrument; please insert appropriate information in the header.")
         sys.exit()
 
     return instrument
 
-# A function to obtain the factor that is necessary to convert an image's flux units
-# to Jy/pixel.
+# Function: get_conversion_factor(header, instrument)
+# A function to obtain the factor that is necessary to convert an image's native "flux 
+# units" to Jy/pixel.
+# NOTETOSELF: if the instrument is not found, the user can provide the value themselves
 def get_conversion_factor(header, instrument):
     # Give a default value that can't possibly be valid; if this is still the value
     # after running through all of the possible cases, then an error has occurred.
@@ -89,9 +100,9 @@ def get_conversion_factor(header, instrument):
         print("Instrument: IRAC; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
         pixelscale = header['PXSCAL1']
         #print("Pixel scale: " + `pixelscale`)
-        # This is a hardcoded value from what Sophia gave me.
+        # NOTEOTSELF: This is a hardcoded value from what Sophia gave me.
         # I would like to see if we could also obtain this from units.
-        # MJy/sr to Jy/pixel
+        # The native "flux unit" is MJy/sr and we convert it to Jy/pixel
         conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
 
     elif (instrument == 'MIPS'):
@@ -132,6 +143,7 @@ def get_conversion_factor(header, instrument):
         # keyword
         if ('BUNIT' in header):
             if (header['BUNIT'].lower() != 'jy/pixel'):
+                # NOTETOSELF: ask for more input here if necessary
                 print("Instrument is PACS, but Jy/pixel is not being used in BUNIT.")
         conversion_factor = 1;
 
@@ -148,6 +160,7 @@ def get_conversion_factor(header, instrument):
     
     return conversion_factor
 
+# Function: get_wavelength(header)
 # A function to allow wavelength values to be obtained from a number of different
 # header keywords
 def get_wavelength(header):
@@ -157,9 +170,12 @@ def get_wavelength(header):
         wavelength = header['WAVELENG']
         wavelength_units = header.comments['WAVELENG']
     elif ('WAVELNTH' in header):
+        # NOTETOSELF: microns are not necessarily used here - check the header comments
         wavelength = header['WAVELNTH']
         wavelength_units = 'micron'
     elif ('FILTER' in header):
+        # NOTETOSELF: Check the actual instrument to make sure that this should be in
+        # microns.
         wavelength = header['FILTER']
         wavelength_units = 'micron'
 
@@ -239,6 +255,10 @@ for i in all_files:
     hdulist = fits.open(i)
     #hdulist.info()
     header = hdulist[0].header
+    # NOTETOSELF: The check for a data cube needs to be another function due to complexity. Check the
+    # hdulist.info() values to see how much information is contained in the file.
+    # In a data cube, there may be more than one usable science image. We need to make
+    # sure that they are all grabbed.
     # Check to see if the input file is a data cube before trying to grab the image data
     if ('EXTEND' in header and 'DSETS___' in header):
         image = hdulist[1].data
@@ -254,6 +274,8 @@ for i in all_files:
     #wavelength_units = header.comments['WAVELENG']
     wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
     #print("Wavelength " + `wavelength_microns` + "; Sample image value: " + `image[30][30]`)
+    # NOTETOSELF: don't overwrite the header value here. Either create a new keyword,
+    # say, WLMICRON, or include the original value in a comment.
     header['WAVELENG'] = (wavelength_microns, 'micron')
     image_data.append(image)
     headers.append(header)
@@ -282,20 +304,18 @@ for i in range(0, len(images_with_headers)):
     print("Conversion factor: " + `conversion_factor`)
     #print
 
-    # Do a conversion and save it as a new .fits file
+    # Do a Jy/pixel unit conversion and save it as a new .fits file
     converted_filename = images_with_headers[i][2] + "_converted.fits"
-    hdu = fits.PrimaryHDU(images_with_headers[i][0] * conversion_factor, images_with_headers[i][1])
-    hdu.writeto(converted_filename)
+    #hdu = fits.PrimaryHDU(images_with_headers[i][0] * conversion_factor, images_with_headers[i][1])
+    #hdu.writeto(converted_filename)
 
     #print("Image data: " + `images_with_headers[i][0]`)
     #print("Image data converted: " + `images_with_headers[i][0] * conversion_factor`)
 
-    # Now try to save all of the image data and headers as a new FITS image.
-    # This was just a test - no need to actually do it right now, or yet.
-    #hdu = fits.PrimaryHDU(image_data[i], headers[i])
-    #hdu.writeto(`i` + '.fits')
-
 sys.exit()
+
+# NOTETOSELF: the registration part has been updated in another txt file. Make sure to
+# check that file (about physical size) before doing any more work on this code.
 
 #First we create an artificial fits image
 # unlearn some iraf tasks
