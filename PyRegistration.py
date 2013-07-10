@@ -101,16 +101,18 @@ def get_conversion_factor(header, instrument):
         conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
 
     elif (instrument == 'GALEX'):
-        print("Instrument: GALEX; wavelength: " + `header['WAVELENG']`)
+        wavelength = u.um.to(u.angstrom, header['WAVELENG'])
+        print("Instrument: GALEX; wavelength: " + `wavelength`)
         #print("Speed of light: " + `constants.c.to('um/s').value`)
         f_lambda_con = 0
         # I am using a < comparison here to account for the possibility that the given
         # wavelength is not EXACTLY 1520 AA or 2310 AA
-        if (header['WAVELENG'] < 0.2): 
+        if (wavelength < 2000): 
             f_lambda_con = 1.40 * 10**(-15)
         else:
             f_lambda_con = 2.06 * 10**(-16)
-        conversion_factor = (10**23 * f_lambda_con * header['WAVELENG']**2) / (constants.c.to('um/s').value)
+        conversion_factor = ((10**23) * f_lambda_con * wavelength**2) / (constants.c.to('angstrom/s').value)
+        #print("lambda^2/c = " + `(wavelength**2) / (constants.c.to('angstrom/s').value)`)
 
     elif (instrument == '2MASS'):
         print("Instrument: 2MASS; wavelength: " + `header['WAVELENG']` + "; FILTER: " + `header['FILTER']`)
@@ -135,7 +137,7 @@ def get_conversion_factor(header, instrument):
 
     elif (instrument == 'SPIRE'):
         print("Instrument: SPIRE; wavelength: " + `header['WAVELENG']`)
-        pixelscale = header['CDELT2']
+        pixelscale = u.deg.to(u.arcsec, header['CDELT2'])
         wavelength = header['WAVELENG']
         if (wavelength == 250):
             conversion_factor = (pixelscale**2) / 423
@@ -235,6 +237,7 @@ filenames = []
 
 for i in all_files:
     hdulist = fits.open(i)
+    #hdulist.info()
     image = hdulist[0].data
     header = hdulist[0].header
     #filename = hdulist.filename()
@@ -273,7 +276,10 @@ for i in range(0, len(images_with_headers)):
 
     conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
     print("Conversion factor: " + `conversion_factor`)
-    print
+    #print
+
+    #print("Image data: " + `images_with_headers[i][0]`)
+    #print("Image data converted: " + `images_with_headers[i][0] * conversion_factor`)
 
     # Now try to save all of the image data and headers as a new FITS image.
     # This was just a test - no need to actually do it right now, or yet.
