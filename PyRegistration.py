@@ -241,82 +241,79 @@ def parse_command_line():
 #ymag_input = u.deg.to(u.arcsec, ymag_input)
 #print("xmag: " + `xmag_input`)
 
-# Grab all of the .fits and .fit files
-all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAWb/*.fit*')
+if __name__ == '__main__':
+    print("Main")
 
-# Lists to store information
-# We may need to another list to store filenames. This would enable us to create
-# output filenames based on the input filenames; e.g. for image1.fits, we could output
-# files like image1_registered.fits, image1_convolved.fits, image1_resampled.fits, etc.
-# First check to make sure that this information is not already in the header somewhere.
-# Actually, it can be found using hdulist.filename(), but it's not actually in the
-# header. So another list seems like it would be the best way to retain it.
-image_data = []
-headers = []
-filenames = []
+    # Grab all of the .fits and .fit files
+    all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAWb/*.fit*')
 
-for i in all_files:
-    hdulist = fits.open(i)
-    #hdulist.info()
-    header = hdulist[0].header
-    # NOTETOSELF: The check for a data cube needs to be another function due to complexity. Check the
-    # hdulist.info() values to see how much information is contained in the file.
-    # In a data cube, there may be more than one usable science image. We need to make
-    # sure that they are all grabbed.
-    # Check to see if the input file is a data cube before trying to grab the image data
-    if ('EXTEND' in header and 'DSETS___' in header):
-        image = hdulist[1].data
-    else:
-        image = hdulist[0].data
-    #filename = hdulist.filename()
-    # Strip the .fit or .fits extension from the filename so we can append things to it
-    # later on
-    filename = os.path.splitext(hdulist.filename())[0]
-    hdulist.close()
-    #wavelength = header['WAVELENG']
-    wavelength, wavelength_units = get_wavelength(header)
-    #wavelength_units = header.comments['WAVELENG']
-    wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
-    #print("Wavelength " + `wavelength_microns` + "; Sample image value: " + `image[30][30]`)
-    # NOTETOSELF: don't overwrite the header value here. Either create a new keyword,
-    # say, WLMICRON, or include the original value in a comment.
-    header['WAVELENG'] = (wavelength_microns, 'micron')
-    image_data.append(image)
-    headers.append(header)
-    filenames.append(filename)
+    # Lists to store information
+    image_data = []
+    headers = []
+    filenames = []
 
-# Sort the lists by their WAVELENG value
-images_with_headers_unsorted = zip(image_data, headers, filenames)
-images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELENG'])
+    for i in all_files:
+        hdulist = fits.open(i)
+        #hdulist.info()
+        header = hdulist[0].header
+        # NOTETOSELF: The check for a data cube needs to be another function due to complexity. Check the
+        # hdulist.info() values to see how much information is contained in the file.
+        # In a data cube, there may be more than one usable science image. We need to make
+        # sure that they are all grabbed.
+        # Check to see if the input file is a data cube before trying to grab the image data
+        if ('EXTEND' in header and 'DSETS___' in header):
+            image = hdulist[1].data
+        else:
+            image = hdulist[0].data
+        #filename = hdulist.filename()
+        # Strip the .fit or .fits extension from the filename so we can append things to it
+        # later on
+        filename = os.path.splitext(hdulist.filename())[0]
+        hdulist.close()
+        #wavelength = header['WAVELENG']
+        wavelength, wavelength_units = get_wavelength(header)
+        #wavelength_units = header.comments['WAVELENG']
+        wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
+        #print("Wavelength " + `wavelength_microns` + "; Sample image value: " + `image[30][30]`)
+        # NOTETOSELF: don't overwrite the header value here. Either create a new keyword,
+        # say, WLMICRON, or include the original value in a comment.
+        header['WAVELENG'] = (wavelength_microns, 'micron')
+        image_data.append(image)
+        headers.append(header)
+        filenames.append(filename)
 
-#print("----------\nAfter sorting\n----------")
-for i in range(0, len(images_with_headers)):
-    #print("Data: " + `image_data`)
-    #print("Data shape" + `image_data[i].shape`)
-    wavelength = images_with_headers[i][1]['WAVELENG']
-    wavelength_units = images_with_headers[i][1].comments['WAVELENG']
-    #print("Wavelength: " + `wavelength` + ' ' + `wavelength_units` + "; Sample image value: " + `images_with_headers[i][0][30][30]`)
-    #print("Wavelength units: " + `wavelength_units`)
-    #wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
-    #print("Wavelengths in microns: " + `wavelength_microns`)
+    # Sort the lists by their WAVELENG value
+    images_with_headers_unsorted = zip(image_data, headers, filenames)
+    images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELENG'])
+
+    #print("----------\nAfter sorting\n----------")
+    for i in range(0, len(images_with_headers)):
+        #print("Data: " + `image_data`)
+        #print("Data shape" + `image_data[i].shape`)
+        wavelength = images_with_headers[i][1]['WAVELENG']
+        wavelength_units = images_with_headers[i][1].comments['WAVELENG']
+        #print("Wavelength: " + `wavelength` + ' ' + `wavelength_units` + "; Sample image value: " + `images_with_headers[i][0][30][30]`)
+        #print("Wavelength units: " + `wavelength_units`)
+        #wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
+        #print("Wavelengths in microns: " + `wavelength_microns`)
+        
+        instrument = get_instrument(images_with_headers[i][1])
+        #print("Instrument: " + instrument)
+        #print("Filename: " + images_with_headers[i][2])
     
-    instrument = get_instrument(images_with_headers[i][1])
-    #print("Instrument: " + instrument)
-    #print("Filename: " + images_with_headers[i][2])
-
-    conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
-    print("Conversion factor: " + `conversion_factor`)
-    #print
-
-    # Do a Jy/pixel unit conversion and save it as a new .fits file
-    converted_filename = images_with_headers[i][2] + "_converted.fits"
-    #hdu = fits.PrimaryHDU(images_with_headers[i][0] * conversion_factor, images_with_headers[i][1])
-    #hdu.writeto(converted_filename)
-
-    #print("Image data: " + `images_with_headers[i][0]`)
-    #print("Image data converted: " + `images_with_headers[i][0] * conversion_factor`)
-
-sys.exit()
+        conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
+        print("Conversion factor: " + `conversion_factor`)
+        #print
+    
+        # Do a Jy/pixel unit conversion and save it as a new .fits file
+        converted_filename = images_with_headers[i][2] + "_converted.fits"
+        #hdu = fits.PrimaryHDU(images_with_headers[i][0] * conversion_factor, images_with_headers[i][1])
+        #hdu.writeto(converted_filename)
+    
+        #print("Image data: " + `images_with_headers[i][0]`)
+        #print("Image data converted: " + `images_with_headers[i][0] * conversion_factor`)
+    
+    sys.exit()
 
 # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
 # check that file (about physical size) before doing any more work on this code.
