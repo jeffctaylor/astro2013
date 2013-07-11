@@ -44,10 +44,11 @@ def is_number(s):
 # Function: print_usage()
 # This function sisplays usage information in case of a command line error
 def print_usage():
-    print("Usage: " + sys.argv[0] + " --directory <directory> --angular_physical_size <angular_physical_size>")
+    print("Usage: " + sys.argv[0] + " --directory <directory> --angular_physical_size <angular_physical_size> [--conversion_factors]")
     print
     print("directory is the path to the directory containing FITS files to work with")
     print("angular_physical_size is the physical size to map to the object")
+    print("conversion_factors will enable a formatted table of conversion factors to be output")
 
 # Function: wavelength_to_microns(wavelength, unit)
 # This function will convert the input wavelength units into microns so that we only
@@ -100,7 +101,6 @@ def get_conversion_factor(header, instrument):
     conversion_factor = 0
 
     if (instrument == 'IRAC'):
-        print("Instrument: IRAC; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
         pixelscale = header['PXSCAL1']
         #print("Pixel scale: " + `pixelscale`)
         # NOTEOTSELF: This is a hardcoded value from what Sophia gave me.
@@ -109,14 +109,12 @@ def get_conversion_factor(header, instrument):
         conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
 
     elif (instrument == 'MIPS'):
-        print("Instrument: MIPS; wavelength: " + `header['WAVELENG']` + "; CHNLNUM: " + `header['CHNLNUM']`)
         pixelscale = header['PLTSCALE']
         #print("Pixel scale: " + `pixelscale`)
         conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
 
     elif (instrument == 'GALEX'):
         wavelength = u.um.to(u.angstrom, header['WAVELENG'])
-        print("Instrument: GALEX; wavelength: " + `wavelength`)
         #print("Speed of light: " + `constants.c.to('um/s').value`)
         f_lambda_con = 0
         # I am using a < comparison here to account for the possibility that the given
@@ -129,7 +127,6 @@ def get_conversion_factor(header, instrument):
         #print("lambda^2/c = " + `(wavelength**2) / (constants.c.to('angstrom/s').value)`)
 
     elif (instrument == '2MASS'):
-        print("Instrument: 2MASS; wavelength: " + `header['WAVELENG']` + "; FILTER: " + `header['FILTER']`)
         #print("MAGZP: " + `header['MAGZP']`)
         fvega = 0
         if (header['FILTER'] == 'j'):
@@ -141,7 +138,6 @@ def get_conversion_factor(header, instrument):
         conversion_factor = fvega * 10**(-0.4 * header['MAGZP'])
 
     elif (instrument == 'PACS'):
-        print("Instrument: PACS; wavelength: " + `header['WAVELENG']`)
         # Confirm that the data is already in Jy/pixel by checking the BUNIT header
         # keyword
         if ('BUNIT' in header):
@@ -151,7 +147,6 @@ def get_conversion_factor(header, instrument):
         conversion_factor = 1;
 
     elif (instrument == 'SPIRE'):
-        print("Instrument: SPIRE; wavelength: " + `header['WAVELENG']`)
         pixelscale = u.deg.to(u.arcsec, header['CDELT2'])
         wavelength = header['WAVELENG']
         if (wavelength == 250):
@@ -188,13 +183,16 @@ ncols_input = ""
 nlines_input = ""
 image_input = ""
 
-# Parse the command line options
+# Function: parse_command_line()
+# This function parses the command line to obtain parameters.
+# The parameters are checked for correctness and then returned to the calling function.
 def parse_command_line():
     global phys_size
     global directory
+    global conversion_factors
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size="])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors"])
     except getopt.GetoptError:
         print("An error occurred. Check your parameters and try again.")
         sys.exit(2)
@@ -202,7 +200,9 @@ def parse_command_line():
         if opt in ("--angular_physical_size"):
             phys_size = float(arg)
         if opt in ("--directory"):
-            directory= arg
+            directory = arg
+        if opt in ("--conversion_factors"):
+            conversion_factors = True
 
     # Now make sure that the values we have just grabbed from the command line are 
     # valid.
@@ -218,7 +218,30 @@ def parse_command_line():
         print("Error: The specifiied directory cannot be found.")
         sys.exit()
 
-    return phys_size, directory
+    return phys_size, directory, conversion_factors
+
+# Function: output_conversion_factors(images_with_headers)
+# Prints a formatted list of instruments, wavelengths, and conversion factors to
+# Jy/pixel
+# NOTETOSELF: maybe we can add a separator parameter - e.g. if the user wants the
+# values to be comma-separated.
+def output_conversion_factors(images_with_headers):
+    print("Instrument\tWavelength\tConversion factor (to Jy/pixel)")
+    for i in range(0, len(images_with_headers)):
+        wavelength = images_with_headers[i][1]['WAVELENG']
+        wavelength_units = images_with_headers[i][1].comments['WAVELENG']
+        #print("Wavelength: " + `wavelength` + ' ' + `wavelength_units` + "; Sample image value: " + `images_with_headers[i][0][30][30]`)
+        #print("Wavelength units: " + `wavelength_units`)
+        #wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
+        #print("Wavelengths in microns: " + `wavelength_microns`)
+        
+        instrument = get_instrument(images_with_headers[i][1])
+        #print("Instrument: " + instrument)
+        #print("Filename: " + images_with_headers[i][2])
+    
+        conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
+        print(instrument + '\t' + `wavelength` + '\t' + `conversion_factor`)
+        #print
 
 # Read the input image data and header into an NDData object
 #hdulist = fits.open(image_input)
@@ -242,7 +265,8 @@ def parse_command_line():
 if __name__ == '__main__':
     phys_size = ''
     directory = ''
-    phys_size, directory = parse_command_line()
+    conversion_factors = False
+    phys_size, directory, conversion_factors = parse_command_line()
 
     # Grab all of the .fits and .fit files in the specified directory
     all_files = glob.glob(directory + "/*.fit*")
@@ -286,24 +310,7 @@ if __name__ == '__main__':
     images_with_headers_unsorted = zip(image_data, headers, filenames)
     images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELENG'])
 
-    #print("----------\nAfter sorting\n----------")
     for i in range(0, len(images_with_headers)):
-        #print("Data: " + `image_data`)
-        #print("Data shape" + `image_data[i].shape`)
-        wavelength = images_with_headers[i][1]['WAVELENG']
-        wavelength_units = images_with_headers[i][1].comments['WAVELENG']
-        #print("Wavelength: " + `wavelength` + ' ' + `wavelength_units` + "; Sample image value: " + `images_with_headers[i][0][30][30]`)
-        #print("Wavelength units: " + `wavelength_units`)
-        #wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
-        #print("Wavelengths in microns: " + `wavelength_microns`)
-        
-        instrument = get_instrument(images_with_headers[i][1])
-        #print("Instrument: " + instrument)
-        #print("Filename: " + images_with_headers[i][2])
-    
-        conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
-        print("Conversion factor: " + `conversion_factor`)
-        #print
     
         # Do a Jy/pixel unit conversion and save it as a new .fits file
         converted_filename = images_with_headers[i][2] + "_converted.fits"
@@ -313,6 +320,8 @@ if __name__ == '__main__':
         #print("Image data: " + `images_with_headers[i][0]`)
         #print("Image data converted: " + `images_with_headers[i][0] * conversion_factor`)
     
+    if (conversion_factors):
+        output_conversion_factors(images_with_headers)
     sys.exit()
 
 # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
