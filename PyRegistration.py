@@ -247,6 +247,23 @@ def output_conversion_factors(images_with_headers):
 # Converts all of the input images' native "flux units" to Jy/pixel
 def convert_images(images_with_headers):
     print("Converting images")
+    for i in range(0, len(images_with_headers)):
+        instrument = get_instrument(images_with_headers[i][1])
+        conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
+
+        # Some manipulation of filenames and directories
+        original_filename = os.path.basename(images_with_headers[i][2])
+        original_directory = os.path.dirname(images_with_headers[i][2])
+        new_directory = original_directory + "/converted/"
+        converted_filename = new_directory + original_filename  + "_converted.fits"
+        if not os.path.exists(new_directory):
+            os.makedirs(new_directory)
+
+        # Do a Jy/pixel unit conversion and save it as a new .fits file
+        converted_data = images_with_headers[i][0] * conversion_factor
+        hdu = fits.PrimaryHDU(converted_data, images_with_headers[i][1])
+        print("Creating " + converted_filename)
+        hdu.writeto(converted_filename, clobber=True)
 
 # Function: register_images(images_with_headers)
 def register_images(images_with_headers):
@@ -331,16 +348,6 @@ if __name__ == '__main__':
     images_with_headers_unsorted = zip(image_data, headers, filenames)
     images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELENG'])
 
-    for i in range(0, len(images_with_headers)):
-    
-        # Do a Jy/pixel unit conversion and save it as a new .fits file
-        converted_filename = images_with_headers[i][2] + "_converted.fits"
-        #hdu = fits.PrimaryHDU(images_with_headers[i][0] * conversion_factor, images_with_headers[i][1])
-        #hdu.writeto(converted_filename)
-    
-        #print("Image data: " + `images_with_headers[i][0]`)
-        #print("Image data converted: " + `images_with_headers[i][0] * conversion_factor`)
-    
     if (conversion_factors):
         output_conversion_factors(images_with_headers)
 
