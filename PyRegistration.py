@@ -66,7 +66,7 @@ def wavelength_to_microns(wavelength, unit):
 
     return return_value
 
-# Function: get_instruments(header)
+# Function: get_instrument(header)
 # A function to determine which instrument was used. This is done by checking certain
 # keywords in the FITS header.
 # NOTETOSELF: other keywords may be acceptable
@@ -269,20 +269,59 @@ def convert_images(images_with_headers):
         hdu.writeto(converted_filename, clobber=True)
 
 # Function: register_images(images_with_headers)
+# NOTETOSELF: try to do this from the converted_data array first.
+# If that fails, then we can always just read in the _converted.fits files that were
+# also created by convert_images().
 def register_images(images_with_headers):
     print("Registering images")
+    print("phys_size: " + `phys_size`)
+    # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
+    # check that file (about physical size) before doing any more work on this code.
+
+    #First we create an artificial fits image
+    # unlearn some iraf tasks
+
+    iraf.unlearn('mkpattern')
+    #create a fake image "apixelgrid.fits", to which we will register all fits images
+
+    artdata.mkpattern(input="apixelgrid.fits", output="apixelgrid.fits", pattern="constant", pixtype="double", ndim=2, ncols=phys_size/native_pixelscale, nlines=phys_size/native_pixelscale)
+    #note that in the exact above line, the "ncols" and "nlines" should be wisely chosen, depending on the input images - they provide the pixel-grid 
+    #for each input fits image, we will create the corresponding artificial one - therefore we can tune these values such that we cover, for instance, XXarcsecs of the target - so the best is that user provides us with such a value
+
+    #Then, we tag the desired WCS in this fake image:
+    # unlearn some iraf tasks
+
+    iraf.unlearn('ccsetwcs')
+    #tag the desired WCS in the fake image "apixel.fits"
+
+    iraf.ccsetwcs(images="apixelgrid.fits", database="", solution="", xref=(phys_size/native_pixelscale)/2, yref=(phys_size/native_pixelscale)/2, xmag=native_pixelscale, ymag=native_pixelscale, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
+    #note that the "xref" and "yref" are actually half the above "ncols", "nlines", respectively, so that we center each image
+    #note also that "xmag" and "ymag" is the pixel-scale, which in the current step ought to be the same as the native pixel-scale of the input image, for each input image - so we check the corresponding header value in each image
+    #note that "lngref" and "latref" can be grabbed by the fits header, it is actually the center of the target (e.g. ngc1569)
+    #note that we should make sure that the coordinate system is in coosyst="j2000" by checking the header info, otherwise we need to adjust that
+    # As of 2013-07-02, xmag, yman, lngref, and latref are all being obtained from the
+    # header of the input image
+
+    # Then, register the fits file of interest to the WCS of the fake fits file
+    # unlearn some iraf tasks
+
+    iraf.unlearn('wregister')
+    #register the sciense fits image
+
+    iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
+
 
 # Function: convolve_images(images_with_headers)
 def convolve_images(images_with_headers):
-    print("Convolving images")
+    print("Convolving images (not implemented yet)")
 
 # Function: resample_images(images_with_headers)
 def resample_images(images_with_headers):
-    print("Resampling images")
+    print("Resampling images (not implemented yet)")
 
 # Function: output_seds(images_with_headers)
 def output_seds(images_with_headers):
-    print("Outputting SEDs")
+    print("Outputting SEDs (not implemented yet)")
 
 # Read the input image data and header into an NDData object
 #hdulist = fits.open(image_input)
@@ -360,7 +399,7 @@ if __name__ == '__main__':
 
     convert_images(images_with_headers)
 
-    register_images(images_with_headers)
+    #register_images(images_with_headers)
 
     convolve_images(images_with_headers)
 
@@ -369,39 +408,4 @@ if __name__ == '__main__':
     output_seds(images_with_headers)
 
     sys.exit()
-
-# NOTETOSELF: the registration part has been updated in another txt file. Make sure to
-# check that file (about physical size) before doing any more work on this code.
-
-#First we create an artificial fits image
-# unlearn some iraf tasks
-
-iraf.unlearn('mkpattern')
-#create a fake image "apixelgrid.fits", to which we will register all fits images
-
-artdata.mkpattern(input="apixelgrid.fits", output="apixelgrid.fits", pattern="constant", pixtype="double", ndim=2, ncols=ncols_input, nlines=nlines_input)
-#note that in the exact above line, the "ncols" and "nlines" should be wisely chosen, depending on the input images - they provide the pixel-grid 
-#for each input fits image, we will create the corresponding artificial one - therefore we can tune these values such that we cover, for instance, XXarcsecs of the target - so the best is that user provides us with such a value
-
-#Then, we tag the desired WCS in this fake image:
-# unlearn some iraf tasks
-
-iraf.unlearn('ccsetwcs')
-#tag the desired WCS in the fake image "apixel.fits"
-
-iraf.ccsetwcs(images="apixelgrid.fits", database="", solution="", xref=ncols_input/2.0, yref=nlines_input/2.0, xmag=xmag_input, ymag=ymag_input, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
-#note that the "xref" and "yref" are actually half the above "ncols", "nlines", respectively, so that we center each image
-#note also that "xmag" and "ymag" is the pixel-scale, which in the current step ought to be the same as the native pixel-scale of the input image, for each input image - so we check the corresponding header value in each image
-#note that "lngref" and "latref" can be grabbed by the fits header, it is actually the center of the target (e.g. ngc1569)
-#note that we should make sure that the coordinate system is in coosyst="j2000" by checking the header info, otherwise we need to adjust that
-# As of 2013-07-02, xmag, yman, lngref, and latref are all being obtained from the
-# header of the input image
-
-# Then, register the fits file of interest to the WCS of the fake fits file
-# unlearn some iraf tasks
-
-iraf.unlearn('wregister')
-#register the sciense fits image
-
-iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
 
