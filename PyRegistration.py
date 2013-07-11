@@ -91,6 +91,27 @@ def get_instrument(header):
 
     return instrument
 
+# Function: get_native_pixelscale(header, instrument)
+# A function to obtain the native pixelscale of the given instrument. Depending on the
+# instrument, the pixelscale can be located in different header keywords.
+def get_native_pixelscale(header, instrument):
+    pixelscale = 0
+    if (instrument == 'IRAC'):
+        pixelscale = header['PXSCAL1']
+    elif (instrument == 'MIPS'):
+        pixelscale = header['PLTSCALE']
+    elif (instrument == 'SPIRE'):
+        pixelscale = u.deg.to(u.arcsec, header['CDELT2'])
+    else:
+        if ('CDELT2' in header):
+            pixelscale = header['CDELT2']
+
+    if (pixelscale == 0):
+        print("The native pixelscale is 0, so something may have gone wrong here.")
+
+    return pixelscale
+
+
 # Function: get_conversion_factor(header, instrument)
 # A function to obtain the factor that is necessary to convert an image's native "flux 
 # units" to Jy/pixel.
@@ -101,7 +122,7 @@ def get_conversion_factor(header, instrument):
     conversion_factor = 0
 
     if (instrument == 'IRAC'):
-        pixelscale = header['PXSCAL1']
+        pixelscale = get_native_pixelscale(header, 'IRAC')
         #print("Pixel scale: " + `pixelscale`)
         # NOTEOTSELF: This is a hardcoded value from what Sophia gave me.
         # I would like to see if we could also obtain this from units.
@@ -109,7 +130,7 @@ def get_conversion_factor(header, instrument):
         conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
 
     elif (instrument == 'MIPS'):
-        pixelscale = header['PLTSCALE']
+        pixelscale = get_native_pixelscale(header, 'MIPS')
         #print("Pixel scale: " + `pixelscale`)
         conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
 
@@ -147,7 +168,7 @@ def get_conversion_factor(header, instrument):
         conversion_factor = 1;
 
     elif (instrument == 'SPIRE'):
-        pixelscale = u.deg.to(u.arcsec, header['CDELT2'])
+        pixelscale = get_native_pixelscale(header, 'SPIRE')
         wavelength = header['WAVELENG']
         if (wavelength == 250):
             conversion_factor = (pixelscale**2) / 423
@@ -275,40 +296,43 @@ def convert_images(images_with_headers):
 def register_images(images_with_headers):
     print("Registering images")
     print("phys_size: " + `phys_size`)
-    # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
-    # check that file (about physical size) before doing any more work on this code.
+    for i in range(0, len(images_with_headers)):
+        # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
+        # check that file (about physical size) before doing any more work on this code.
 
-    #First we create an artificial fits image
-    # unlearn some iraf tasks
+        native_pixelscale = get_native_pixelscale(images_with_headers[i][1], get_instrument(images_with_headers[i][1]))
 
-    iraf.unlearn('mkpattern')
-    #create a fake image "apixelgrid.fits", to which we will register all fits images
+        #First we create an artificial fits image
+        # unlearn some iraf tasks
 
-    artdata.mkpattern(input="apixelgrid.fits", output="apixelgrid.fits", pattern="constant", pixtype="double", ndim=2, ncols=phys_size/native_pixelscale, nlines=phys_size/native_pixelscale)
-    #note that in the exact above line, the "ncols" and "nlines" should be wisely chosen, depending on the input images - they provide the pixel-grid 
-    #for each input fits image, we will create the corresponding artificial one - therefore we can tune these values such that we cover, for instance, XXarcsecs of the target - so the best is that user provides us with such a value
+        iraf.unlearn('mkpattern')
+        #create a fake image "apixelgrid.fits", to which we will register all fits images
 
-    #Then, we tag the desired WCS in this fake image:
-    # unlearn some iraf tasks
+        artdata.mkpattern(input="apixelgrid.fits", output="apixelgrid.fits", pattern="constant", pixtype="double", ndim=2, ncols=phys_size/native_pixelscale, nlines=phys_size/native_pixelscale)
+        #note that in the exact above line, the "ncols" and "nlines" should be wisely chosen, depending on the input images - they provide the pixel-grid 
+        #for each input fits image, we will create the corresponding artificial one - therefore we can tune these values such that we cover, for instance, XXarcsecs of the target - so the best is that user provides us with such a value
 
-    iraf.unlearn('ccsetwcs')
-    #tag the desired WCS in the fake image "apixel.fits"
+        #Then, we tag the desired WCS in this fake image:
+        # unlearn some iraf tasks
 
-    iraf.ccsetwcs(images="apixelgrid.fits", database="", solution="", xref=(phys_size/native_pixelscale)/2, yref=(phys_size/native_pixelscale)/2, xmag=native_pixelscale, ymag=native_pixelscale, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
-    #note that the "xref" and "yref" are actually half the above "ncols", "nlines", respectively, so that we center each image
-    #note also that "xmag" and "ymag" is the pixel-scale, which in the current step ought to be the same as the native pixel-scale of the input image, for each input image - so we check the corresponding header value in each image
-    #note that "lngref" and "latref" can be grabbed by the fits header, it is actually the center of the target (e.g. ngc1569)
-    #note that we should make sure that the coordinate system is in coosyst="j2000" by checking the header info, otherwise we need to adjust that
-    # As of 2013-07-02, xmag, yman, lngref, and latref are all being obtained from the
-    # header of the input image
+        iraf.unlearn('ccsetwcs')
+        #tag the desired WCS in the fake image "apixel.fits"
 
-    # Then, register the fits file of interest to the WCS of the fake fits file
-    # unlearn some iraf tasks
+        iraf.ccsetwcs(images="apixelgrid.fits", database="", solution="", xref=(phys_size/native_pixelscale)/2, yref=(phys_size/native_pixelscale)/2, xmag=native_pixelscale, ymag=native_pixelscale, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
+        #note that the "xref" and "yref" are actually half the above "ncols", "nlines", respectively, so that we center each image
+        #note also that "xmag" and "ymag" is the pixel-scale, which in the current step ought to be the same as the native pixel-scale of the input image, for each input image - so we check the corresponding header value in each image
+        #note that "lngref" and "latref" can be grabbed by the fits header, it is actually the center of the target (e.g. ngc1569)
+        #note that we should make sure that the coordinate system is in coosyst="j2000" by checking the header info, otherwise we need to adjust that
+        # As of 2013-07-02, xmag, yman, lngref, and latref are all being obtained from the
+        # header of the input image
 
-    iraf.unlearn('wregister')
-    #register the sciense fits image
+        # Then, register the fits file of interest to the WCS of the fake fits file
+        # unlearn some iraf tasks
 
-    iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
+        iraf.unlearn('wregister')
+        #register the sciense fits image
+
+        iraf.wregister(input=image_input, reference="apixelgrid.fits", output="scitestout.fits", fluxconserve="no")
 
 
 # Function: convolve_images(images_with_headers)
