@@ -190,37 +190,35 @@ image_input = ""
 
 # Parse the command line options
 def parse_command_line():
+    global phys_size
+    global directory
+
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["ncols=", "nlines=", "image="])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size="])
     except getopt.GetoptError:
         print("An error occurred. Check your parameters and try again.")
         sys.exit(2)
     for opt, arg in opts:
-        if opt in ("--ncols"):
-            ncols_input = float(arg)
-        if opt in ("--nlines"):
-            nlines_input = float(arg)
-        if opt in ("--image"):
-            image_input= arg
+        if opt in ("--angular_physical_size"):
+            phys_size = float(arg)
+        if opt in ("--directory"):
+            directory= arg
 
-    # Now make sure that the values we have just grabbed from the command line are valid.
-    # ncols and nlines should both be numbers...
-    if (not is_number(ncols_input)):
+    # Now make sure that the values we have just grabbed from the command line are 
+    # valid.
+    # The angular physical size should be a number
+    if (not is_number(phys_size)):
         print_usage()
-        print("ncols must be a number.")
-        sys.exit()
-    if (not is_number(nlines_input)):
-        print_usage()
-        print("nlines must be a number.")
+        print("Error: angular physical size must be a number.")
         sys.exit()
 
-    # And the image should be a valid file.
-    #try:
-    #with open(image_input): pass
-    #except IOError:
-        #print_usage()
-        #print("The specifiied image is not a file.")
-        #sys.exit()
+    # And the directory should actually exist
+    if (not os.path.isdir(directory)):
+        print_usage()
+        print("Error: The specifiied directory cannot be found.")
+        sys.exit()
+
+    return phys_size, directory
 
 # Read the input image data and header into an NDData object
 #hdulist = fits.open(image_input)
@@ -242,10 +240,12 @@ def parse_command_line():
 #print("xmag: " + `xmag_input`)
 
 if __name__ == '__main__':
-    print("Main")
+    phys_size = ''
+    directory = ''
+    phys_size, directory = parse_command_line()
 
-    # Grab all of the .fits and .fit files
-    all_files = glob.glob('/Users/jeff.c.taylor/Dropbox/ASTROINFORMATICs/RAWdata/RAWb/*.fit*')
+    # Grab all of the .fits and .fit files in the specified directory
+    all_files = glob.glob(directory + "/*.fit*")
 
     # Lists to store information
     image_data = []
