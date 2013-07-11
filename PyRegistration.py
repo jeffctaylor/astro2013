@@ -245,6 +245,8 @@ def output_conversion_factors(images_with_headers):
 
 # Function: convert_images(images_with_headers)
 # Converts all of the input images' native "flux units" to Jy/pixel
+# The converted values are stored in the list of arrays, converted_data, and they
+# are also saved as new FITS images.
 def convert_images(images_with_headers):
     print("Converting images")
     for i in range(0, len(images_with_headers)):
@@ -260,8 +262,9 @@ def convert_images(images_with_headers):
             os.makedirs(new_directory)
 
         # Do a Jy/pixel unit conversion and save it as a new .fits file
-        converted_data = images_with_headers[i][0] * conversion_factor
-        hdu = fits.PrimaryHDU(converted_data, images_with_headers[i][1])
+        converted_data_array = images_with_headers[i][0] * conversion_factor
+        converted_data.append(converted_data_array)
+        hdu = fits.PrimaryHDU(converted_data_array, images_with_headers[i][1])
         print("Creating " + converted_filename)
         hdu.writeto(converted_filename, clobber=True)
 
@@ -311,6 +314,10 @@ if __name__ == '__main__':
 
     # Lists to store information
     image_data = []
+    converted_data = []
+    registered_data = []
+    convolved_data = []
+    resampled_data = []
     headers = []
     filenames = []
 
