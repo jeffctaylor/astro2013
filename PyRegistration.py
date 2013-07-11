@@ -243,6 +243,27 @@ def output_conversion_factors(images_with_headers):
         print(instrument + '\t' + `wavelength` + '\t' + `conversion_factor`)
         #print
 
+# Function: convert_images(images_with_headers)
+# Converts all of the input images' native "flux units" to Jy/pixel
+def convert_images(images_with_headers):
+    print("Converting images")
+
+# Function: register_images(images_with_headers)
+def register_images(images_with_headers):
+    print("Registering images")
+
+# Function: convolve_images(images_with_headers)
+def convolve_images(images_with_headers):
+    print("Convolving images")
+
+# Function: resample_images(images_with_headers)
+def resample_images(images_with_headers):
+    print("Resampling images")
+
+# Function: output_seds(images_with_headers)
+def output_seds(images_with_headers):
+    print("Outputting SEDs")
+
 # Read the input image data and header into an NDData object
 #hdulist = fits.open(image_input)
 #d1 = NDData(hdulist[0].data, meta=hdulist[0].header)
@@ -322,6 +343,17 @@ if __name__ == '__main__':
     
     if (conversion_factors):
         output_conversion_factors(images_with_headers)
+
+    convert_images(images_with_headers)
+
+    register_images(images_with_headers)
+
+    convolve_images(images_with_headers)
+
+    resample_images(images_with_headers)
+
+    output_seds(images_with_headers)
+
     sys.exit()
 
 # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
