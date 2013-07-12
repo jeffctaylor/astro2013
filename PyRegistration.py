@@ -94,17 +94,19 @@ def get_instrument(header):
 # Function: get_native_pixelscale(header, instrument)
 # A function to obtain the native pixelscale of the given instrument. Depending on the
 # instrument, the pixelscale can be located in different header keywords.
+# NOTETOSELF: this value should be returned in arcsec, so some additional checking will
+# be needed to ensure that the proper units are being used.
 def get_native_pixelscale(header, instrument):
     pixelscale = 0
     if (instrument == 'IRAC'):
-        pixelscale = header['PXSCAL1']
+        pixelscale = abs(header['PXSCAL1'])
     elif (instrument == 'MIPS'):
         pixelscale = header['PLTSCALE']
     elif (instrument == 'SPIRE'):
         pixelscale = u.deg.to(u.arcsec, header['CDELT2'])
     else:
         if ('CDELT2' in header):
-            pixelscale = header['CDELT2']
+            pixelscale = u.deg.to(u.arcsec, header['CDELT2'])
 
     if (pixelscale == 0):
         print("The native pixelscale is 0, so something may have gone wrong here.")
@@ -301,6 +303,8 @@ def register_images(images_with_headers):
         # check that file (about physical size) before doing any more work on this code.
 
         native_pixelscale = get_native_pixelscale(images_with_headers[i][1], get_instrument(images_with_headers[i][1]))
+        print("Native pixel scale: " + `native_pixelscale`)
+        print("Instrument: " + `get_instrument(images_with_headers[i][1])`)
 
         original_filename = os.path.basename(images_with_headers[i][2])
         original_directory = os.path.dirname(images_with_headers[i][2])
@@ -319,7 +323,7 @@ def register_images(images_with_headers):
         #iraf.unlearn('mkpattern')
         #create a fake image "apixelgrid.fits", to which we will register all fits images
 
-        #artdata.mkpattern(input="apixelgrid.fits", output="apixelgrid.fits", pattern="constant", pixtype="double", ndim=2, ncols=phys_size/native_pixelscale, nlines=phys_size/native_pixelscale)
+        #artdata.mkpattern(input=artificial_filename, output=artificial_filename, pattern="constant", pixtype="double", ndim=2, ncols=phys_size/native_pixelscale, nlines=phys_size/native_pixelscale)
         #note that in the exact above line, the "ncols" and "nlines" should be wisely chosen, depending on the input images - they provide the pixel-grid 
         #for each input fits image, we will create the corresponding artificial one - therefore we can tune these values such that we cover, for instance, XXarcsecs of the target - so the best is that user provides us with such a value
 
