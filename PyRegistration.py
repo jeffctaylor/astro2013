@@ -356,6 +356,62 @@ def register_images(images_with_headers):
 def convolve_images(images_with_headers):
     print("Convolving images (not implemented yet)")
 
+    for i in range(0, len(images_with_headers)):
+
+        original_filename = os.path.basename(images_with_headers[i][2])
+        original_directory = os.path.dirname(images_with_headers[i][2])
+        new_directory = original_directory + "/convolved/"
+        #artificial_filename = new_directory + original_filename + "_pixelgrid.fits"
+        #registered_filename = new_directory + original_filename  + "_registered.fits"
+        input_directory = original_directory + "/registered/"
+        input_filename = input_directory + original_filename  + "_registered.fits"
+        print("Artificial filename: " + artificial_filename)
+        print("Registered filename: " + registered_filename)
+        print("Input filename: " + input_filename)
+        if not os.path.exists(new_directory):
+            os.makedirs(new_directory)
+
+        #reading the science image:
+        science_image = fits.getdata(input_filename)
+
+
+        # if using a kernel image, then we first regrid the kernel to the same as in the science image, and we re-center the kernel:
+
+        # create a fake image "apixel_kernel.fits"
+        # the original kernel has a grid of 3645*3645 pixels and centered at (1822, 1822)
+        # ncols = nlines = initial_number_of_rows * initial_pixelsize_of_the_kernel  / science_image_pixelsize
+        # in the current case: 3645* 0.25 (arcsecs per pixel) / 2 (arcsecs per pixel) = 455.62
+        artdata.mkpattern(input="apixel_kernel.fits", output="apixel_kernel.fits", pattern="constant", option="replace",v1=0., v2=1., size=1, title="", pixtype="real", ndim=2, ncols=455,nlines=455,n3=1, n4=1, n5=1, n6=1, n7=1, header="")
+
+        #Then, tag the desired WCS in this fake image:
+        #
+        # unlearn some iraf tasks
+        iraf.unlearn('ccsetwcs')
+        #xref = yref = ncols/2 = nlines/2
+        #xmag, ymag = pixel scale of science image
+        iraf.ccsetwcs(images="apixel_kernel.fits", database="", solution="", xref=227.5, yref=227.5, xmag=2, ymag=2, xrotati=0.,yrotati=0.,lngref=0, latref=0, lngunit="hours", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
+
+        # Then, register the fits file of interest to the WCS of the fake fits file
+        #
+        # unlearn some iraf tasks
+        iraf.unlearn('wregister')
+
+        iraf.wregister(input="Kernel_HiRes_PACS_70_to_SPIRE_500.fits", reference="apixel_kernel.fits", output="Kernel_P70_2_S500.fits", fluxconserve="yes")
+
+        # then we get the data from the kernel
+        kernel_image = pyfits.getdata('Kernel_P70_2_S500.fits')
+
+        #several ways to do the convolution, but is best to use number 3 or 4:
+
+        #3. 
+        result3 = astropy.nddata.convolution.convolve.convolve(science_image, kernel_image) # got a segmentation fault - it needs an odd number of columns/rows for the kernel
+        pyfits.writeto('science_image_convolved_3.fits',result3)
+
+        #4. 
+        result4 = astropy.nddata.convolution.convolve.convolve_fft(science_image,kernel_image) # worked OK - was the fastest thus far
+        pyfits.writeto('science_image_convolved_4.fits',result4) 
+
+
 # Function: resample_images(images_with_headers)
 def resample_images(images_with_headers):
     print("Resampling images (not implemented yet)")
@@ -435,7 +491,7 @@ if __name__ == '__main__':
 
     register_images(images_with_headers)
 
-    convolve_images(images_with_headers)
+    #convolve_images(images_with_headers)
 
     resample_images(images_with_headers)
 
