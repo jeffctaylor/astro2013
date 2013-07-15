@@ -23,6 +23,8 @@ import getopt
 
 import glob
 
+import math
+
 import os
 
 from astropy.io import fits
@@ -416,7 +418,7 @@ def register_images(images_with_headers):
 
 # Function: convolve_images_psf(images_with_headers)
 # NOTETOSELF: This function requires a PSF kernel. Not sure where it should go, but
-# here it is just in case we still need it.
+# here it is just in case we still need it. It is NOT ready to be run yet.
 def convolve_images_psf(images_with_headers):
     print("Convolving images (not implemented yet)")
 
@@ -476,8 +478,28 @@ def convolve_images_psf(images_with_headers):
 
 def convolve_images(images_with_headers):
     print("Convolving images (currently being implemented)")
-    fwhm = get_fwhm_value(images_with_headers)
-    print("fwhm = " + `fwhm`)
+    fwhm_input = get_fwhm_value(images_with_headers)
+    print("fwhm_input = " + `fwhm_input`)
+
+    for i in range(0, len(images_with_headers)):
+
+        native_pixelscale = get_native_pixelscale(images_with_headers[i][1], get_instrument(images_with_headers[i][1]))
+        sigma_input = fwhm_input / (2* math.sqrt(2*math.log (2) ) * native_pixelscale)
+        print("Native pixel scale: " + `native_pixelscale`)
+        print("Instrument: " + `get_instrument(images_with_headers[i][1])`)
+
+        original_filename = os.path.basename(images_with_headers[i][2])
+        original_directory = os.path.dirname(images_with_headers[i][2])
+        new_directory = original_directory + "/convolved/"
+        convolved_filename = new_directory + original_filename  + "_convolved.fits"
+        input_directory = original_directory + "/registered/"
+        input_filename = input_directory + original_filename  + "_registered.fits"
+        print("Convolved filename: " + convolved_filename)
+        print("Input filename: " + input_filename)
+        if not os.path.exists(new_directory):
+            os.makedirs(new_directory)
+
+        gaus_kernel_inp = NDData.convolution.make_kernel.make_kernel([5,5], kernelwidth=sigma_input, kerneltype='gaussian', trapslope=None, force_odd=False)
     #for i in range(0, len(images_with_headers)):
 
 # Function: resample_images(images_with_headers)
