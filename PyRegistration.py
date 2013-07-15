@@ -208,19 +208,47 @@ def get_wavelength(header):
 # that are present in all of the input images.
 # This function depends on data taken from Aniano et al. 2011.
 def get_fwhm_value(images_with_headers):
-    print("get_fwhm_value")
     fwhm = 0
     instruments = []
-    # Determine which instruments we have data from
+    instruments_with_wavelengths = {}
+    #wavelengths = []
+    # Determine which instruments and wavelenghts we have data from
     for i in range(0, len(images_with_headers)):
         instrument = get_instrument(images_with_headers[i][1])
-        instruments.append(instrument)
-    if ('MIPS' in instruments):
-        print("MIPS is in the instruments")
-    elif ('SPIRE' in instruments):
-        print("SPIRE is in the instruments")
-    elif ('PACS' in instruments):
-        print("PACS is in the instrumnets")
+        # The [0] is here because we only need the wavelength, not the units as well.
+        wavelength = get_wavelength(images_with_headers[i][1])[0]
+        if (instrument in instruments_with_wavelengths):
+            instruments_with_wavelengths[instrument].append(wavelength)
+        else:
+            instruments_with_wavelengths[instrument] = [wavelength]
+
+    if ('MIPS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['MIPS'], 140, 170)):
+        fwhm = 76
+    elif ('SPIRE' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['SPIRE'], 490, 510)):
+        fwhm = 43
+    elif ('MIPS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['MIPS'], 50, 90)):
+        fwhm = 37
+    elif ('SPIRE' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['SPIRE'], 300, 400)):
+        fwhm = 30
+    elif ('SPIRE' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['SPIRE'], 200, 299)):
+        fwhm = 22
+    elif ('PACS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['PACS'], 140, 180)):
+        fwhm = 18
+    elif ('MIPS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['MIPS'], 18, 30)):
+        fwhm = 13
+    elif ('PACS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['PACS'], 90, 110)):
+        fwhm = 12.5
+    elif ('PACS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['PACS'], 60, 80)):
+        fwhm = 10.5
+
+    return fwhm
+
+def wavelength_range(wavelengths, lower, upper):
+    return_value = False
+    for i in wavelengths:
+        if (i >= lower and i <= upper):
+            return_value = True
+    return return_value
 
 # Function: parse_command_line()
 # This function parses the command line to obtain parameters.
@@ -386,7 +414,6 @@ def register_images(images_with_headers):
         # unit converted images.
         iraf.wregister(input=input_filename, reference=artificial_filename, output=registered_filename, fluxconserve="no")
 
-
 # Function: convolve_images_psf(images_with_headers)
 # NOTETOSELF: This function requires a PSF kernel. Not sure where it should go, but
 # here it is just in case we still need it.
@@ -449,7 +476,8 @@ def convolve_images_psf(images_with_headers):
 
 def convolve_images(images_with_headers):
     print("Convolving images (currently being implemented)")
-    get_fwhm_value(images_with_headers)
+    fwhm = get_fwhm_value(images_with_headers)
+    print("fwhm = " + `fwhm`)
     #for i in range(0, len(images_with_headers)):
 
 # Function: resample_images(images_with_headers)
