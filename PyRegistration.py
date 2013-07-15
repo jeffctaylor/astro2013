@@ -44,11 +44,12 @@ def is_number(s):
 # Function: print_usage()
 # This function sisplays usage information in case of a command line error
 def print_usage():
-    print("Usage: " + sys.argv[0] + " --directory <directory> --angular_physical_size <angular_physical_size> [--conversion_factors]")
+    print("Usage: " + sys.argv[0] + " --directory <directory> --angular_physical_size <angular_physical_size> [--conversion_factors] [--conversion] [--registration] [--convolution] [--resampling] [--seds]")
     print
     print("directory is the path to the directory containing FITS files to work with")
     print("angular_physical_size is the physical size to map to the object")
     print("conversion_factors will enable a formatted table of conversion factors to be output")
+    print("conversion, registration, convolution, resampling, and seds: each of these parameters will enable the corresponding processing step to be performed. Default behaviour is to do none of these steps.")
 
 # Function: wavelength_to_microns(wavelength, unit)
 # This function will convert the input wavelength units into microns so that we only
@@ -228,9 +229,14 @@ def parse_command_line():
     global phys_size
     global directory
     global conversion_factors
+    global do_conversion
+    global do_registration
+    global do_convolution
+    global do_resampling
+    global do_seds
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors"])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds"])
     except getopt.GetoptError:
         print("An error occurred. Check your parameters and try again.")
         sys.exit(2)
@@ -241,6 +247,16 @@ def parse_command_line():
             directory = arg
         if opt in ("--conversion_factors"):
             conversion_factors = True
+        if opt in ("--conversion"):
+            do_conversion = True
+        if opt in ("--registration"):
+            do_registration = True
+        if opt in ("--convolution"):
+            do_convolution = True
+        if opt in ("--resampling"):
+            do_resampling = True
+        if opt in ("--seds"):
+            do_seds = True
 
     # Now make sure that the values we have just grabbed from the command line are 
     # valid.
@@ -460,6 +476,11 @@ if __name__ == '__main__':
     phys_size = ''
     directory = ''
     conversion_factors = False
+    do_conversion = False
+    do_registration = False
+    do_convolution = False
+    do_resampling = False
+    do_seds = False
     phys_size, directory, conversion_factors = parse_command_line()
 
     # Grab all of the .fits and .fit files in the specified directory
@@ -511,15 +532,20 @@ if __name__ == '__main__':
     if (conversion_factors):
         output_conversion_factors(images_with_headers)
 
-    convert_images(images_with_headers)
+    if (do_conversion):
+        convert_images(images_with_headers)
 
-    register_images(images_with_headers)
+    if (do_registration):
+        register_images(images_with_headers)
 
-    convolve_images(images_with_headers)
+    if (do_convolution):
+        convolve_images(images_with_headers)
 
-    resample_images(images_with_headers)
+    if (do_resampling):
+        resample_images(images_with_headers)
 
-    output_seds(images_with_headers)
+    if (do_seds):
+        output_seds(images_with_headers)
 
     sys.exit()
 
