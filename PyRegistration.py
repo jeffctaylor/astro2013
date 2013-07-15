@@ -352,8 +352,8 @@ def register_images(images_with_headers):
         iraf.wregister(input=input_filename, reference=artificial_filename, output=registered_filename, fluxconserve="no")
 
 
-# Function: convolve_images(images_with_headers)
-def convolve_images(images_with_headers):
+# Function: convolve_images_psf(images_with_headers)
+def convolve_images_psf(images_with_headers):
     print("Convolving images (not implemented yet)")
 
     for i in range(0, len(images_with_headers)):
@@ -373,7 +373,6 @@ def convolve_images(images_with_headers):
 
         #reading the science image:
         science_image = fits.getdata(input_filename)
-
 
         # if using a kernel image, then we first regrid the kernel to the same as in the science image, and we re-center the kernel:
 
