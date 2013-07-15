@@ -202,6 +202,25 @@ def get_wavelength(header):
 
     return wavelength, wavelength_units
 
+# Function: get_fwhm_value(images_with_headers)
+# A function to determine the fwhm value given the instrument and wavelength values
+# that are present in all of the input images.
+# This function depends on data taken from Aniano et al. 2011.
+def get_fwhm_value(images_with_headers):
+    print("get_fwhm_value")
+    fwhm = 0
+    instruments = []
+    # Determine which instruments we have data from
+    for i in range(0, len(images_with_headers)):
+        instrument = get_instrument(images_with_headers[i][1])
+        instruments.append(instrument)
+    if ('MIPS' in instruments):
+        print("MIPS is in the instruments")
+    elif ('SPIRE' in instruments):
+        print("SPIRE is in the instruments")
+    elif ('PACS' in instruments):
+        print("PACS is in the instrumnets")
+
 # Function: parse_command_line()
 # This function parses the command line to obtain parameters.
 # The parameters are checked for correctness and then returned to the calling function.
@@ -353,6 +372,8 @@ def register_images(images_with_headers):
 
 
 # Function: convolve_images_psf(images_with_headers)
+# NOTETOSELF: This function requires a PSF kernel. Not sure where it should go, but
+# here it is just in case we still need it.
 def convolve_images_psf(images_with_headers):
     print("Convolving images (not implemented yet)")
 
@@ -410,6 +431,10 @@ def convolve_images_psf(images_with_headers):
         result4 = astropy.nddata.convolution.convolve.convolve_fft(science_image,kernel_image) # worked OK - was the fastest thus far
         pyfits.writeto('science_image_convolved_4.fits',result4) 
 
+def convolve_images(images_with_headers):
+    print("Convolving images (currently being implemented)")
+    get_fwhm_value(images_with_headers)
+    #for i in range(0, len(images_with_headers)):
 
 # Function: resample_images(images_with_headers)
 def resample_images(images_with_headers):
@@ -490,7 +515,7 @@ if __name__ == '__main__':
 
     register_images(images_with_headers)
 
-    #convolve_images(images_with_headers)
+    convolve_images(images_with_headers)
 
     resample_images(images_with_headers)
 
