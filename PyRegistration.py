@@ -563,15 +563,14 @@ def resample_images(images_with_headers):
         iraf.unlearn('ccsetwcs')
 
         # tag the desired WCS in the fake image "apixel.fits"
-        iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=ncols/2, yref=nlines/2, xmag=fwhm/nyquist_sampling_rate, ymag=fwhm/nyquist_sampling_rate, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="hours", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
+        iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=parameter1/2, yref=parameter2/2, xmag=fwhm_input/nyquist_sampling_rate, ymag=fwhm_input/nyquist_sampling_rate, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="hours", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
 
         # Then, register the fits file of interest to the WCS of the fake fits file
         # unlearn some iraf tasks
-        
         iraf.unlearn('wregister')
+
         # register the science fits image
-       
-        #iraf.wregister(input="input_image_convolved.fits", reference="grid_final_resample.fits", output="input_image_final.fits", fluxconserve="yes")
+        iraf.wregister(input=input_filename, reference="grid_final_resample.fits", output=resampled_filename, fluxconserve="yes")
 
 # Function: output_seds(images_with_headers)
 def output_seds(images_with_headers):
