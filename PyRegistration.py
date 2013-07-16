@@ -529,11 +529,9 @@ def resample_images(images_with_headers):
     # First we create an artificial fits image, 
     # The difference with the registration step is that the artificial image is now created only once, and it is common for all the input_images_convolved (or imput_images_gaussian_convolved)
     # unlearn some iraf tasks
-    #
     iraf.unlearn('mkpattern')
-    #
-    #create a fake image "grid_final_resample.fits", to which we will register all fits images
-    #
+    
+    # create a fake image "grid_final_resample.fits", to which we will register all fits images
     fwhm_input = get_fwhm_value(images_with_headers)
     nyquist_sampling_rate = 3.3
     # parameter1 & parameter2 depend on the "fwhm" of the convolution step, and following the Nyquist sampling rate. 
@@ -560,21 +558,20 @@ def resample_images(images_with_headers):
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
-        #Then, we tag the desired WCS in this fake image:
+        # Then, we tag the desired WCS in this fake image:
         # unlearn some iraf tasks
         iraf.unlearn('ccsetwcs')
 
-        #tag the desired WCS in the fake image "apixel.fits"
-        iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=ncols/2, yref=nlines/2, xmag=fwhm/nyquist_sampling_rate, ymag=fwhm/nyquist_sampling_rate, xrotati=0.,yrotati=0.,lngref=same_as_we_put_in_the_registration, latref=same_as_we_put_in_the_registration, lngunit="hours", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
+        # tag the desired WCS in the fake image "apixel.fits"
+        iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=ncols/2, yref=nlines/2, xmag=fwhm/nyquist_sampling_rate, ymag=fwhm/nyquist_sampling_rate, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="hours", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
 
         # Then, register the fits file of interest to the WCS of the fake fits file
         # unlearn some iraf tasks
-        #
+        
         iraf.unlearn('wregister')
-        #register the sciense fits image
-        #
+        # register the science fits image
+       
         #iraf.wregister(input="input_image_convolved.fits", reference="grid_final_resample.fits", output="input_image_final.fits", fluxconserve="yes")
-        #
 
 # Function: output_seds(images_with_headers)
 def output_seds(images_with_headers):
