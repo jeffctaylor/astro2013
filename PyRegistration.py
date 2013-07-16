@@ -28,7 +28,8 @@ import math
 import os
 
 from astropy.io import fits
-from astropy.nddata import NDData
+#from astropy.nddata import NDData
+from astropy.nddata import make_kernel, convolve
 from astropy import units as u
 from astropy import constants
 import numpy as np
@@ -499,8 +500,27 @@ def convolve_images(images_with_headers):
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
-        gaus_kernel_inp = NDData.convolution.make_kernel.make_kernel([5,5], kernelwidth=sigma_input, kerneltype='gaussian', trapslope=None, force_odd=False)
-    #for i in range(0, len(images_with_headers)):
+        # NOTETOSELF: there has been a loss of data from the data cubes at an earlier
+        # step. The presence of 'EXTEND' and 'DSETS___' keywords in the header no
+        # longer means that there is any data in hdulist[1].data. I am using a
+        # workaround for now, but this needs to be looked at.
+        hdulist = fits.open(input_filename)
+        header = hdulist[0].header
+        image_data = hdulist[0].data
+        #if ('EXTEND' in header and 'DSETS___' in header):
+            #image_data = hdulist[1].data
+        #else:
+            #image_data = hdulist[0].data
+        hdulist.close()
+
+        gaus_kernel_inp = make_kernel([5,5], kernelwidth=sigma_input, kerneltype='gaussian', trapslope=None, force_odd=False)
+
+        # Do the convolution and save it as a new .fits file
+        conv_result = convolve(image_data, gaus_kernel_inp)
+
+        hdu = fits.PrimaryHDU(conv_result, images_with_headers[i][1])
+        print("Creating " + convolved_filename)
+        hdu.writeto(convolved_filename, clobber=True)
 
 # Function: resample_images(images_with_headers)
 def resample_images(images_with_headers):
