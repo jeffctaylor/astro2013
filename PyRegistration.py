@@ -522,6 +522,23 @@ def convolve_images(images_with_headers):
         print("Creating " + convolved_filename)
         hdu.writeto(convolved_filename, clobber=True)
 
+# Function: get_herschel_minimum(images_with_headers, keyword)
+# This function is used by resample_images() to obtain minimum values for lngref and
+# latref. These values are to be taken from Herschel data, so we check all images with
+# PACS or SPIRE as the instrument.
+def get_herschel_minimum(images_with_headers, keyword):
+    print("get_herschel_minimum(" + keyword + ")")
+    values = []
+    return_value = 0
+    for i in range(0, len(images_with_headers)):
+        instrument = get_instrument(images_with_headers[i][1])
+        if (instrument == 'PACS' or instrument == 'SPIRE'):
+            value = images_with_headers[i][1][keyword]
+            values.append(value)
+    print("possible values: " + `values`)
+    return_value = min(values)
+    return return_value
+
 # Function: resample_images(images_with_headers)
 def resample_images(images_with_headers):
     print("Resampling images (currently being implemented)")
@@ -539,14 +556,20 @@ def resample_images(images_with_headers):
     parameter2 = parameter1
     artdata.mkpattern(input="grid_final_resample.fits", output="grid_final_resample.fits", pattern="constant", pixtype="double", ndim=2, ncols=parameter1, nlines=parameter2)
 
+    lngref_input = get_herschel_minimum(images_with_headers, 'CRVAL1')
+    latref_input = get_herschel_minimum(images_with_headers, 'CRVAL2')
+    print("lngref: " + `lngref_input` + "; latref: " + `latref_input`)
+
+    # Then, we tag the desired WCS in this fake image:
+    # unlearn some iraf tasks
+    iraf.unlearn('ccsetwcs')
+
+    # tag the desired WCS in the fake image "apixel.fits"
+    # NOTETOSELF: in the code Sophia gave me, lngunit was given as "hours", but I have
+    # changed it to "degrees".
+    iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=parameter1/2, yref=parameter2/2, xmag=fwhm_input/nyquist_sampling_rate, ymag=fwhm_input/nyquist_sampling_rate, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
+
     for i in range(0, len(images_with_headers)):
-
-        native_pixelscale = get_native_pixelscale(images_with_headers[i][1], get_instrument(images_with_headers[i][1]))
-        print("Native pixel scale: " + `native_pixelscale`)
-        print("Instrument: " + `get_instrument(images_with_headers[i][1])`)
-        lngref_input = images_with_headers[i][1]['CRVAL1']
-        latref_input = images_with_headers[i][1]['CRVAL2']
-
         original_filename = os.path.basename(images_with_headers[i][2])
         original_directory = os.path.dirname(images_with_headers[i][2])
         new_directory = original_directory + "/resampled/"
@@ -557,13 +580,6 @@ def resample_images(images_with_headers):
         print("Input filename: " + input_filename)
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
-
-        # Then, we tag the desired WCS in this fake image:
-        # unlearn some iraf tasks
-        iraf.unlearn('ccsetwcs')
-
-        # tag the desired WCS in the fake image "apixel.fits"
-        iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=parameter1/2, yref=parameter2/2, xmag=fwhm_input/nyquist_sampling_rate, ymag=fwhm_input/nyquist_sampling_rate, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="hours", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
 
         # Then, register the fits file of interest to the WCS of the fake fits file
         # unlearn some iraf tasks
