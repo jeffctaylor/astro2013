@@ -8,6 +8,15 @@
 # extension of the cube, instrument, physical size of the target, and WCS header 
 # information.
 
+# NOTETOSELF: make sure that the conventions at http://docs.astropy.org/en/latest/development/codeguide.html#standard-output-warnings-and-errors 
+# are being followed. Maybe we can have a --verbose mode where extra
+# information gets printed to stdout.
+
+# NOTETOSELF: Maybe a --cleanup parameter that gets rid of extraneous
+# files that get created a long the way - e.g. fake FITS images.
+
+from __future__ import print_function, division
+
 #things to import regarding pyraf & iraf
 
 import pyraf
@@ -28,25 +37,37 @@ import math
 import os
 
 from astropy.io import fits
-#from astropy.nddata import NDData
 from astropy.nddata import make_kernel, convolve
 from astropy import units as u
 from astropy import constants
 import numpy as np
 
-# Function: is_number(s)
-# This function simply checks whether the input value is a number or not.
-# It is used to check for proper input from the user.
 def is_number(s):
+    """
+    Checks whether the input value is a number or not.
+
+    Parameters
+    ----------
+    s
+        The value to check
+
+    Returns
+    -------
+    Boolean
+        True if s is a number, False otherwise
+    """
+
     try:
         float(s)
         return True
     except ValueError:
         return False
 
-# Function: print_usage()
-# This function sisplays usage information in case of a command line error
 def print_usage():
+    """
+    Displays usage information in case of a command line error.
+    """
+
     print("Usage: " + sys.argv[0] + " --directory <directory> --angular_physical_size <angular_physical_size> [--conversion_factors] [--conversion] [--registration] [--convolution] [--resampling] [--seds]")
     print
     print("directory is the path to the directory containing FITS files to work with")
@@ -54,29 +75,56 @@ def print_usage():
     print("conversion_factors will enable a formatted table of conversion factors to be output")
     print("conversion, registration, convolution, resampling, and seds: each of these parameters will enable the corresponding processing step to be performed. Default behaviour is to do none of these steps.")
 
-# Function: wavelength_to_microns(wavelength, unit)
-# This function will convert the input wavelength units into microns so that we only
-# have to deal with a single unit.
 # NOTETOSELF: Other acceptable units: mm, m, Hz
 def wavelength_to_microns(wavelength, unit):
+    """
+    Converts the input wavelength units into microns so that we only have
+    to deal with a single unit.
+
+    Parameters
+    ----------
+    wavelength:
+        The wavelength.
+    unit:
+        The original unit of the wavelength.
+
+    Returns
+    -------
+    return_value: float
+        The wavelength in microns.
+    """
+
     if (unit in u.micron.names or unit in u.um.names):
         return_value = float(wavelength)
     elif (unit in u.angstrom.names):
         return_value = u.angstrom.to(u.micron, float(wavelength))
     # This is a placeholder default value for now - it is not intended to be used
     # for real!
+    # NOTETOSELF: That means that some proper error checking needs to be done here.
     else:
         return_value = 1
 
     return return_value
 
-# Function: get_instrument(header)
-# A function to determine which instrument was used. This is done by checking certain
-# keywords in the FITS header.
 # NOTETOSELF: other keywords may be acceptable
 # NOTETOSELF: pass the filenames to this function as well so we know which file we are
 # on in case of problems.
+# NOTETOSELF: proper error checking needed.
 def get_instrument(header):
+    """
+    Determines which instrument the data in a FITS file came from.
+    This is done by checking certain keywords in the FITS header.
+
+    Parameters
+    ----------
+    header: FITS file header
+        The header of the FITS file to be checked.
+
+    Returns
+    -------
+    instrument: string
+        The instrument which the data in the FITS file came from.
+    """
     instrument = ''
     # Check for INSTRUME keyword first
     if ('INSTRUME' in header):
@@ -95,12 +143,27 @@ def get_instrument(header):
 
     return instrument
 
-# Function: get_native_pixelscale(header, instrument)
-# A function to obtain the native pixelscale of the given instrument. Depending on the
-# instrument, the pixelscale can be located in different header keywords.
 # NOTETOSELF: this value should be returned in arcsec, so some additional checking will
 # be needed to ensure that the proper units are being used.
 def get_native_pixelscale(header, instrument):
+    """
+    Returns the native pixelscale of the given instrument. Depending on the
+    instrument, the pixelscale can be located in different header keywords.
+
+    Parameters
+    ----------
+    header: FITS file header
+        The header of the FITS file to be checked.
+
+    instrument: string
+        The instrument which the data in the FITS file came from
+
+    Returns
+    -------
+    pixelscale: float
+        The native pixelscale of the given instrument.
+    """
+
     pixelscale = 0
     if (instrument == 'IRAC'):
         pixelscale = abs(header['PXSCAL1'])
@@ -118,11 +181,27 @@ def get_native_pixelscale(header, instrument):
     return pixelscale
 
 
-# Function: get_conversion_factor(header, instrument)
-# A function to obtain the factor that is necessary to convert an image's native "flux 
-# units" to Jy/pixel.
 # NOTETOSELF: if the instrument is not found, the user can provide the value themselves
 def get_conversion_factor(header, instrument):
+    """
+    Returns the factor that is necessary to convert an image's native "flux 
+    units" to Jy/pixel.
+
+    Parameters
+    ----------
+    header: FITS file header
+        The header of the FITS file to be checked.
+
+    instrument: string
+        The instrument which the data in the FITS file came from
+
+    Returns
+    -------
+    conversion_factor: float
+        The conversion factor that will convert the image's native "flux
+        units" to Jy/pixel.
+    """
+
     # Give a default value that can't possibly be valid; if this is still the value
     # after running through all of the possible cases, then an error has occurred.
     conversion_factor = 0
@@ -185,10 +264,28 @@ def get_conversion_factor(header, instrument):
     
     return conversion_factor
 
-# Function: get_wavelength(header)
-# A function to allow wavelength values to be obtained from a number of different
-# header keywords
+# NOTETOSELF: I wonder if it might be best to force a type on the wavelength - e.g.
+# float - so that this doesn't have to be done later by other functions.
+# NOTETOSELF: proper error checking - e.g. the wavelength should not actually end up
+# as 0 after all the cases have been checked.
 def get_wavelength(header):
+    """
+    Returns the wavelength and its units for a given FITS image.
+
+    Parameters
+    ----------
+    header: FITS file header
+        The header of the FITS file to be checked.
+
+    Returns
+    -------
+    wavelength:
+        The wavelength value for the given FITS image.
+    wavelength_units: string
+        The units of the wavelength (generally microns, but can be other
+        units as well).
+    """
+
     wavelength = 0
     wavelength_units = ''
     if ('WAVELENG' in header):
@@ -206,16 +303,31 @@ def get_wavelength(header):
 
     return wavelength, wavelength_units
 
-# Function: get_fwhm_value(images_with_headers)
-# A function to determine the fwhm value given the instrument and wavelength values
-# that are present in all of the input images.
-# This function depends on data taken from Aniano et al. 2011.
+# NOTETOSELF: Sophia will be providing proper wavelength ranges to check here.
 def get_fwhm_value(images_with_headers):
+    """
+    Determines the fwhm value given the instrument and wavelength values
+    that are present in all of the input images.
+    This function depends on data taken from Aniano et al. 2011.
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+
+    Returns
+    -------
+    fwhm: float
+        The fwhm value.
+    """
+
     fwhm = 0
     instruments = []
     instruments_with_wavelengths = {}
-    #wavelengths = []
-    # Determine which instruments and wavelenghts we have data from
+    # Determine which instruments and wavelengths we have data from
+    # This is done by creating a dictionary with instruments as the keys,
+    # and a list of wavelengths from each instrument as values.
     for i in range(0, len(images_with_headers)):
         instrument = get_instrument(images_with_headers[i][1])
         # The [0] is here because we only need the wavelength, not the units as well.
@@ -247,16 +359,38 @@ def get_fwhm_value(images_with_headers):
     return fwhm
 
 def wavelength_range(wavelengths, lower, upper):
+    """
+    Determines if the provided list of wavelengths contains a value
+    between the given lower and upper bounds.
+
+    Parameters
+    ----------
+    wavelengths: list
+        A list of wavelength values.
+    lower: float
+        The lower bound to check.
+    upper: float
+        The upper bound to check.
+
+    Returns
+    -------
+    return_value: boolean
+        True if there is a value in the list of wavelengths that is
+        between the lower and upper bounds; False otherwise.
+    """
+
     return_value = False
     for i in wavelengths:
         if (i >= lower and i <= upper):
             return_value = True
     return return_value
 
-# Function: parse_command_line()
-# This function parses the command line to obtain parameters.
-# The parameters are checked for correctness and then returned to the calling function.
 def parse_command_line():
+    """
+    Parses the command line to obtain parameters.
+
+    """
+
     global phys_size
     global directory
     global conversion_factors
@@ -303,36 +437,43 @@ def parse_command_line():
         print("Error: The specifiied directory cannot be found.")
         sys.exit()
 
-    return phys_size, directory, conversion_factors
-
-# Function: output_conversion_factors(images_with_headers)
-# Prints a formatted list of instruments, wavelengths, and conversion factors to
-# Jy/pixel
 # NOTETOSELF: maybe we can add a separator parameter - e.g. if the user wants the
 # values to be comma-separated.
 def output_conversion_factors(images_with_headers):
+    """
+    Prints a formatted list of instruments, wavelengths, and conversion
+    factors to Jy/pixel
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+
+    """
+
     print("Instrument\tWavelength\tConversion factor (to Jy/pixel)")
     for i in range(0, len(images_with_headers)):
         wavelength = images_with_headers[i][1]['WAVELENG']
         wavelength_units = images_with_headers[i][1].comments['WAVELENG']
-        #print("Wavelength: " + `wavelength` + ' ' + `wavelength_units` + "; Sample image value: " + `images_with_headers[i][0][30][30]`)
-        #print("Wavelength units: " + `wavelength_units`)
-        #wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
-        #print("Wavelengths in microns: " + `wavelength_microns`)
-        
         instrument = get_instrument(images_with_headers[i][1])
-        #print("Instrument: " + instrument)
-        #print("Filename: " + images_with_headers[i][2])
-    
         conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
         print(instrument + '\t' + `wavelength` + '\t' + `conversion_factor`)
-        #print
 
-# Function: convert_images(images_with_headers)
-# Converts all of the input images' native "flux units" to Jy/pixel
-# The converted values are stored in the list of arrays, converted_data, and they
-# are also saved as new FITS images.
 def convert_images(images_with_headers):
+    """
+    Converts all of the input images' native "flux units" to Jy/pixel
+    The converted values are stored in the list of arrays, 
+    converted_data, and they are also saved as new FITS images.
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+
+    """
+
     print("Converting images")
     for i in range(0, len(images_with_headers)):
         instrument = get_instrument(images_with_headers[i][1])
@@ -353,7 +494,6 @@ def convert_images(images_with_headers):
         print("Creating " + converted_filename)
         hdu.writeto(converted_filename, clobber=True)
 
-# Function: register_images(images_with_headers)
 # NOTETOSELF: try to do this from the converted_data array first.
 # If that fails, then we can always just read in the _converted.fits files that were
 # also created by convert_images().
@@ -419,7 +559,6 @@ def register_images(images_with_headers):
         # unit converted images.
         iraf.wregister(input=input_filename, reference=artificial_filename, output=registered_filename, fluxconserve="no")
 
-# Function: convolve_images_psf(images_with_headers)
 # NOTETOSELF: This function requires a PSF kernel. Not sure where it should go, but
 # here it is just in case we still need it. It is NOT ready to be run yet.
 def convolve_images_psf(images_with_headers):
@@ -524,7 +663,6 @@ def convolve_images(images_with_headers):
         print("Creating " + convolved_filename)
         hdu.writeto(convolved_filename, clobber=True)
 
-# Function: get_herschel_minimum(images_with_headers, keyword)
 # This function is used by resample_images() to obtain minimum values for lngref and
 # latref. These values are to be taken from Herschel data, so we check all images with
 # PACS or SPIRE as the instrument.
@@ -541,7 +679,6 @@ def get_herschel_minimum(images_with_headers, keyword):
     return_value = min(values)
     return return_value
 
-# Function: resample_images(images_with_headers)
 def resample_images(images_with_headers):
     print("Resampling images (currently being implemented)")
 
@@ -590,21 +727,8 @@ def resample_images(images_with_headers):
         # register the science fits image
         iraf.wregister(input=input_filename, reference="grid_final_resample.fits", output=resampled_filename, fluxconserve="yes")
 
-# Function: output_seds(images_with_headers)
 def output_seds(images_with_headers):
     print("Outputting SEDs (not implemented yet)")
-
-#print("Sample header value: " + d1.meta['OBJECT'])
-#xmag_input = d1.meta['CDELT1']
-#ymag_input = d1.meta['CDELT2']
-
-#print("lngref: " + `lngref_input`)
-#print("latref: " + `latref_input`)
-#print("xmag: " + `xmag_input` + "; converted: " + `u.deg.to(u.arcsec, xmag_input)`)
-#print("ymag: " + `ymag_input` + "; converted: " + `u.deg.to(u.arcsec, ymag_input)`)
-#xmag_input = u.deg.to(u.arcsec, xmag_input)
-#ymag_input = u.deg.to(u.arcsec, ymag_input)
-#print("xmag: " + `xmag_input`)
 
 if __name__ == '__main__':
     phys_size = ''
@@ -615,7 +739,7 @@ if __name__ == '__main__':
     do_convolution = False
     do_resampling = False
     do_seds = False
-    phys_size, directory, conversion_factors = parse_command_line()
+    parse_command_line()
 
     # Grab all of the .fits and .fit files in the specified directory
     all_files = glob.glob(directory + "/*.fit*")
