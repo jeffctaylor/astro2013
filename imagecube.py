@@ -500,6 +500,17 @@ def convert_images(images_with_headers):
 # NOTETOSELF: Sophia told me that we need the single RA/dec value that gets used
 # later (in the resampling step, I believe) in this step as well.
 def register_images(images_with_headers):
+    """
+    Registers all of the images to a common WCS
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+
+    """
+
     print("Registering images")
     print("phys_size: " + `phys_size`)
     lngref_input = get_herschel_minimum(images_with_headers, 'CRVAL1')
@@ -544,19 +555,12 @@ def register_images(images_with_headers):
         #note also that "xmag" and "ymag" is the pixel-scale, which in the current step ought to be the same as the native pixel-scale of the input image, for each input image - so we check the corresponding header value in each image
         #note that "lngref" and "latref" can be grabbed by the fits header, it is actually the center of the target (e.g. ngc1569)
         #note that we should make sure that the coordinate system is in coosyst="j2000" by checking the header info, otherwise we need to adjust that
-        # As of 2013-07-02, xmag, yman, lngref, and latref are all being obtained from the
-        # header of the input image
 
         # Then, register the fits file of interest to the WCS of the fake fits file
         # unlearn some iraf tasks
         iraf.unlearn('wregister')
 
         # register the science fits image
-        # NOTETOSELF: image_input is no longer valid here. I need to figure out how
-        # to get the proper image in here - either the one that has been converted
-        # already, or the input image itself if the user has chosen not to do unit
-        # conversion. Maybe we should keep it simple for now and just go with the
-        # unit converted images.
         iraf.wregister(input=input_filename, reference=artificial_filename, output=registered_filename, fluxconserve="no")
 
 # NOTETOSELF: This function requires a PSF kernel. Not sure where it should go, but
