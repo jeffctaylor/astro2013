@@ -702,12 +702,12 @@ def convolve_images(images_with_headers):
             #image_data = hdulist[0].data
         hdulist.close()
 
-        gaus_kernel_inp = make_kernel([5,5], kernelwidth=sigma_input, kerneltype='gaussian', trapslope=None, force_odd=False)
+        gaus_kernel_inp = make_kernel([3,3], kernelwidth=sigma_input, kerneltype='gaussian', trapslope=None, force_odd=True)
 
         # Do the convolution and save it as a new .fits file
         conv_result = convolve(image_data, gaus_kernel_inp)
 
-        hdu = fits.PrimaryHDU(conv_result, images_with_headers[i][1])
+        hdu = fits.PrimaryHDU(conv_result, header)
         print("Creating " + convolved_filename)
         hdu.writeto(convolved_filename, clobber=True)
 
@@ -732,9 +732,11 @@ def resample_images(images_with_headers):
     
     # create a fake image "grid_final_resample.fits", to which we will register all fits images
     fwhm_input = get_fwhm_value(images_with_headers)
+    print("fwhm: " + `fwhm_input`)
     nyquist_sampling_rate = 3.3
     # parameter1 & parameter2 depend on the "fwhm" of the convolution step, and following the Nyquist sampling rate. 
     parameter1 = phys_size / (fwhm_input / nyquist_sampling_rate) 
+    print("ncols, nlines: " + `parameter1`)
     parameter2 = parameter1
     artdata.mkpattern(input="grid_final_resample.fits", output="grid_final_resample.fits", pattern="constant", pixtype="double", ndim=2, ncols=parameter1, nlines=parameter2)
 
