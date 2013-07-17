@@ -494,10 +494,27 @@ def convert_images(images_with_headers):
         print("Creating " + converted_filename)
         hdu.writeto(converted_filename, clobber=True)
 
-# This function is used to obtain mean values for lngref and
-# latref. These values are to be taken from Herschel data, so we check all images with
-# PACS or SPIRE as the instrument.
 def get_herschel_mean(images_with_headers, keyword):
+    """
+    Checks all of the FITS images with data from Herschel instruments
+    (currently PACS and SPIRE) and returns the mean value of the given
+    FITS header keyword from all the relevant images.
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+    keyword: string
+        The header keyword for which the mean value will be calculated.
+
+    Returns
+    -------
+    return_value: float
+        The mean of the values of the given header keyword for all images
+        with data from Herschel instruments.
+    """
+
     print("get_herschel_mean(" + keyword + ")")
     values = []
     return_value = 0
@@ -506,7 +523,6 @@ def get_herschel_mean(images_with_headers, keyword):
         if (instrument == 'PACS' or instrument == 'SPIRE'):
             value = images_with_headers[i][1][keyword]
             values.append(value)
-    print("possible values: " + `values`)
     return_value = numpy.mean(values)
     return return_value
 
@@ -639,6 +655,18 @@ def convolve_images_psf(images_with_headers):
         pyfits.writeto('science_image_convolved_4.fits',result4) 
 
 def convolve_images(images_with_headers):
+    """
+    Convolves all of the images to a common resolution using a simple
+    gaussian kernel.
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+
+    """
+
     print("Convolving images")
     fwhm_input = get_fwhm_value(images_with_headers)
     print("fwhm_input = " + `fwhm_input`)
@@ -683,9 +711,19 @@ def convolve_images(images_with_headers):
         print("Creating " + convolved_filename)
         hdu.writeto(convolved_filename, clobber=True)
 
-
 def resample_images(images_with_headers):
-    print("Resampling images (currently being implemented)")
+    """
+    Resamples all of the images to a common pixel grid.
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+
+    """
+
+    print("Resampling images.")
 
     # First we create an artificial fits image, 
     # The difference with the registration step is that the artificial image is now created only once, and it is common for all the input_images_convolved (or imput_images_gaussian_convolved)
@@ -733,6 +771,17 @@ def resample_images(images_with_headers):
         iraf.wregister(input=input_filename, reference="grid_final_resample.fits", output=resampled_filename, fluxconserve="yes")
 
 def output_seds(images_with_headers):
+    """
+    Makes the SEDs.
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+
+    """
+
     print("Outputting SEDs (not implemented yet)")
 
 if __name__ == '__main__':
@@ -811,4 +860,3 @@ if __name__ == '__main__':
         output_seds(images_with_headers)
 
     sys.exit()
-
