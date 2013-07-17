@@ -357,9 +357,13 @@ def convert_images(images_with_headers):
 # NOTETOSELF: try to do this from the converted_data array first.
 # If that fails, then we can always just read in the _converted.fits files that were
 # also created by convert_images().
+# NOTETOSELF: Sophia told me that we need the single RA/dec value that gets used
+# later (in the resampling step, I believe) in this step as well.
 def register_images(images_with_headers):
     print("Registering images")
     print("phys_size: " + `phys_size`)
+    lngref_input = get_herschel_minimum(images_with_headers, 'CRVAL1')
+    latref_input = get_herschel_minimum(images_with_headers, 'CRVAL2')
     for i in range(0, len(images_with_headers)):
         # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
         # check that file (about physical size) before doing any more work on this code.
@@ -367,8 +371,6 @@ def register_images(images_with_headers):
         native_pixelscale = get_native_pixelscale(images_with_headers[i][1], get_instrument(images_with_headers[i][1]))
         print("Native pixel scale: " + `native_pixelscale`)
         print("Instrument: " + `get_instrument(images_with_headers[i][1])`)
-        lngref_input = images_with_headers[i][1]['CRVAL1']
-        latref_input = images_with_headers[i][1]['CRVAL2']
 
         original_filename = os.path.basename(images_with_headers[i][2])
         original_directory = os.path.dirname(images_with_headers[i][2])
