@@ -40,7 +40,7 @@ from astropy.io import fits
 from astropy.nddata import make_kernel, convolve
 from astropy import units as u
 from astropy import constants
-import numpy as np
+import numpy
 
 def is_number(s):
     """
@@ -494,6 +494,22 @@ def convert_images(images_with_headers):
         print("Creating " + converted_filename)
         hdu.writeto(converted_filename, clobber=True)
 
+# This function is used to obtain mean values for lngref and
+# latref. These values are to be taken from Herschel data, so we check all images with
+# PACS or SPIRE as the instrument.
+def get_herschel_mean(images_with_headers, keyword):
+    print("get_herschel_mean(" + keyword + ")")
+    values = []
+    return_value = 0
+    for i in range(0, len(images_with_headers)):
+        instrument = get_instrument(images_with_headers[i][1])
+        if (instrument == 'PACS' or instrument == 'SPIRE'):
+            value = images_with_headers[i][1][keyword]
+            values.append(value)
+    print("possible values: " + `values`)
+    return_value = numpy.mean(values)
+    return return_value
+
 # NOTETOSELF: try to do this from the converted_data array first.
 # If that fails, then we can always just read in the _converted.fits files that were
 # also created by convert_images().
@@ -513,8 +529,8 @@ def register_images(images_with_headers):
 
     print("Registering images")
     print("phys_size: " + `phys_size`)
-    lngref_input = get_herschel_minimum(images_with_headers, 'CRVAL1')
-    latref_input = get_herschel_minimum(images_with_headers, 'CRVAL2')
+    lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
+    latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
     for i in range(0, len(images_with_headers)):
         # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
         # check that file (about physical size) before doing any more work on this code.
@@ -667,21 +683,6 @@ def convolve_images(images_with_headers):
         print("Creating " + convolved_filename)
         hdu.writeto(convolved_filename, clobber=True)
 
-# This function is used by resample_images() to obtain minimum values for lngref and
-# latref. These values are to be taken from Herschel data, so we check all images with
-# PACS or SPIRE as the instrument.
-def get_herschel_minimum(images_with_headers, keyword):
-    print("get_herschel_minimum(" + keyword + ")")
-    values = []
-    return_value = 0
-    for i in range(0, len(images_with_headers)):
-        instrument = get_instrument(images_with_headers[i][1])
-        if (instrument == 'PACS' or instrument == 'SPIRE'):
-            value = images_with_headers[i][1][keyword]
-            values.append(value)
-    print("possible values: " + `values`)
-    return_value = min(values)
-    return return_value
 
 def resample_images(images_with_headers):
     print("Resampling images (currently being implemented)")
@@ -699,8 +700,8 @@ def resample_images(images_with_headers):
     parameter2 = parameter1
     artdata.mkpattern(input="grid_final_resample.fits", output="grid_final_resample.fits", pattern="constant", pixtype="double", ndim=2, ncols=parameter1, nlines=parameter2)
 
-    lngref_input = get_herschel_minimum(images_with_headers, 'CRVAL1')
-    latref_input = get_herschel_minimum(images_with_headers, 'CRVAL2')
+    lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
+    latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
     print("lngref: " + `lngref_input` + "; latref: " + `latref_input`)
 
     # Then, we tag the desired WCS in this fake image:
