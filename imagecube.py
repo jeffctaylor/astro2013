@@ -460,10 +460,20 @@ def output_conversion_factors(images_with_headers):
         conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
         print(instrument + '\t' + `wavelength` + '\t' + `conversion_factor`)
 
-# Converts all of the input images' native "flux units" to Jy/pixel
-# The converted values are stored in the list of arrays, converted_data, and they
-# are also saved as new FITS images.
 def convert_images(images_with_headers):
+    """
+    Converts all of the input images' native "flux units" to Jy/pixel
+    The converted values are stored in the list of arrays, 
+    converted_data, and they are also saved as new FITS images.
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+
+    """
+
     print("Converting images")
     for i in range(0, len(images_with_headers)):
         instrument = get_instrument(images_with_headers[i][1])
