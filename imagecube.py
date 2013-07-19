@@ -42,6 +42,9 @@ from astropy import units as u
 from astropy import constants
 import numpy
 
+import scipy, pylab
+from matplotlib import rc
+
 def is_number(s):
     """
     Checks whether the input value is a number or not.
@@ -796,6 +799,80 @@ def output_seds(images_with_headers):
     """
 
     print("Outputting SEDs (not implemented yet)")
+
+    # change to the desired fonts
+    rc('font', family='Times New Roman')
+    rc('text', usetex=True)
+    
+    # load the first data set
+    data = numpy.loadtxt('none/SPEC_4.out', comments='%',usecols = (1,2))
+	# wavelength
+    a = data[:,0] 								
+	# flux
+    b = data[:,1]/1e20							
+
+    # figure(1)
+    pylab.figure(1)
+    pylab.plot(a,b, 'k-',  markersize=3.0, linewidth=2.0, label='none')
+
+	# axes specific
+    pylab.xlabel(r'Wavelength ($\AA$)')					
+    pylab.ylabel(r'Flux ($10^{20}\ erg\ s^{-1}\ Hz^{-1}\ Ster^{-1}$)')
+    pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
+    pylab.axis([6540,6590,1.5,4.5])
+
+    pylab.hold(True)
+
+	# load the second data set
+    data2 = numpy.loadtxt('Te/SPEC_4.out', comments='%',usecols = (1,2)) 	
+    a2 = data2[:,0]
+    b2 = data2[:,1]/1e20
+
+	# overplot in figure(1)
+    pylab.plot(a2,b2, 'r:',  markersize=3.0, linewidth=2.0, label='Te')	
+
+	# load the third data set
+    data3 = numpy.loadtxt('Teff/SPEC_4.out', comments='%',usecols = (1,2)) 	
+    a3 = data3[:,0]
+    b3 = data3[:,1]/1e20
+
+	# overplot in figure(1)
+    pylab.plot(a3,b3, 'b-.',  markersize=3.0, linewidth=2.0, label='Teff')	
+
+    pylab.legend()
+    pylab.savefig('PLOTs/FirstPlot_a.eps')
+    pylab.show()
+
+    # 1st Modification -- Normalized fluxes
+
+	# values start from 0, not from 1
+    n = len(b)										
+	# normalizing continuum flux value
+    bmean1 = (b[0] + b[n-1])/2  								
+
+    # figure(2)
+    pylab.figure(2)
+	# normalized flux - None
+    pylab.plot(a,b/bmean1, 'k-',  markersize=3.0, linewidth=2.0, label='none')		
+
+    pylab.xlabel(r'Wavelength ($\AA$)')
+    pylab.ylabel(r'Flux ($erg\ s^{-1}\ Hz^{-1}\ Ster^{-1}$)')
+    pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
+    pylab.axis([6540, 6590, 0.9, 1.6])
+
+    pylab.hold(True)
+
+    bmean2 = (b2[0] + b2[n-1])/2 
+	# normalized flux - Te
+    pylab.plot(a2,b2/bmean2, 'r:',  markersize=3.0, linewidth=2.0, label='Te')		
+
+    bmean3 = (b3[0] + b3[n-1])/2 
+	# normalized flux - Teff
+    pylab.plot(a3,b3/bmean3, 'b-.',  markersize=3.0, linewidth=2.0, label='Teff')		
+
+    pylab.legend()
+    pylab.savefig('PLOTs/FirstPlot_b.eps')
+    pylab.show()
 
 if __name__ == '__main__':
     phys_size = ''
