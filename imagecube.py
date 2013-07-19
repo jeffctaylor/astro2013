@@ -135,7 +135,8 @@ def get_instrument(header):
             instrument = 'GALEX'
     # Finally, check to see if the 'ORIGIN' keyword has a value of '2MASS'
     elif ('ORIGIN' in header):
-        if (header['ORIGIN'] == '2MASS'):
+        if ('2MASS' in header['ORIGIN']):
+        #if (header['ORIGIN'] == '2MASS'):
             instrument = '2MASS'
     else:
         print("could not determine instrument; please insert appropriate information in the header.")
@@ -268,6 +269,8 @@ def get_conversion_factor(header, instrument):
 # float - so that this doesn't have to be done later by other functions.
 # NOTETOSELF: proper error checking - e.g. the wavelength should not actually end up
 # as 0 after all the cases have been checked.
+# NOTETOSELF: Would it be best to force the units to be microns? Check to see how this
+# would impact other functions first.
 def get_wavelength(header):
     """
     Returns the wavelength and its units for a given FITS image.
@@ -299,6 +302,14 @@ def get_wavelength(header):
         # NOTETOSELF: Check the actual instrument to make sure that this should be in
         # microns.
         wavelength = header['FILTER']
+        instrument = get_instrument(header)
+        if (instrument == '2MASS'):
+            if (header['FILTER'] == 'j'):
+                wavelength = 1.2409
+            elif (header['FILTER'] == 'h'):
+                wavelength = 1.6514
+            elif (header['FILTER'] == 'k'):
+                wavelength = 2.1656
         wavelength_units = 'micron'
 
     return wavelength, wavelength_units
