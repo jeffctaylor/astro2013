@@ -838,14 +838,13 @@ def output_seds(images_with_headers):
     print("len(data): " + `len(data)`)
     num_seds = int(len(data) / num_wavelengths)
     print("Number of SEDs to create: " + `num_seds`)
-    print("i: " + `i` + "; j: " + `j` + "; k: " + `k`)
     # just the wavelengths:
-    print(`data[:,2]`)
+    #print(`data[:,2]`)
     # just the z-values:
-    print(`data[:,3]`)
+    #print(`data[:,3]`)
     # for one wavelength:
-    print(`data[:,2][0:num_wavelengths]`)
-    print(`data[:,3][0:num_wavelengths]`)
+    #print(`data[:,2][0:num_wavelengths]`)
+    #print(`data[:,3][0:num_wavelengths]`)
 
     # for all wavelengths:
     for i in range(0, num_seds):
@@ -858,27 +857,30 @@ def output_seds(images_with_headers):
         
         # wavelength
         #a = data[:,2] 								
-        a = data[:,2][i*num_wavelengths:(i+1)*num_wavelengths]
+        wavelength_values = data[:,2][i*num_wavelengths:(i+1)*num_wavelengths]
         # flux
         #b = data[:,1]/1e20							
         #b = data[:,2]
-        b = data[:,3][i*num_wavelengths:(i+1)*num_wavelengths]
+        flux_values = data[:,3][i*num_wavelengths:(i+1)*num_wavelengths]
         #b = data[:,3][i:i+num_wavelengths]
+        x_values = data[:,0][i*num_wavelengths:(i+1)*num_wavelengths]
+        y_values = data[:,1][i*num_wavelengths:(i+1)*num_wavelengths]
 
-        print("\tWavelength (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `a`)
-        print("\tFlux (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `b`)
+        print("\tx-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `x_values`)
+        print("\ty-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `y_values`)
+        print("\tWavelength (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `wavelength_values`)
+        print("\tFlux (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `flux_values`)
 
         # figure(1)
         pylab.figure(i)
-        pylab.scatter(a,b)
-        #pylab.plot(a,b, 'k-',  markersize=3.0, linewidth=2.0, label='none')
+        pylab.scatter(wavelength_values,flux_values)
 
         # axes specific
         pylab.xlabel(r'log(Wavelength) (um)')					
         pylab.ylabel(r'Flux (Jy/pixel)')
         pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
         pylab.semilogx()
-        pylab.axis([min(a),max(a),min(b),max(b)])
+        pylab.axis([min(wavelength_values),max(wavelength_values),min(flux_values),max(flux_values)])
 
         pylab.hold(True)
 
@@ -899,7 +901,7 @@ def output_seds(images_with_headers):
         #pylab.plot(a3,b3, 'b-.',  markersize=3.0, linewidth=2.0, label='Teff')	
 
         pylab.legend()
-        pylab.savefig(new_directory + '/' + `i` + '_sed.eps')
+        pylab.savefig(new_directory + '/' + `int(x_values[0])` + '_' + `int(y_values[0])` + '_sed.eps')
         #pylab.show()
     return
 
