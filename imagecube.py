@@ -846,56 +846,57 @@ def output_seds(images_with_headers):
     # for one wavelength:
     print(`data[:,2][0:num_wavelengths]`)
     print(`data[:,3][0:num_wavelengths]`)
+
     # for all wavelengths:
     for i in range(0, num_seds):
         print(`i`)
-        print("\t" + `data[:,2][i:i+num_wavelengths]`)
-        print("\t" + `data[:,3][i:i+num_wavelengths]`)
+        #print("\t" + `data[:,2][i:i+num_wavelengths]`)
+        #print("\t" + `data[:,3][i:i+num_wavelengths]`)
 
-    # change to the desired fonts
-    rc('font', family='Times New Roman')
-    rc('text', usetex=True)
-    
-    # wavelength
-    #a = data[:,2] 								
-    a = data[:,2][0:i+1]
-    # flux
-    #b = data[:,1]/1e20							
-    #b = data[:,2]
-    b = data[:,3][0:i+1]
+        # change to the desired fonts
+        rc('font', family='Times New Roman')
+        rc('text', usetex=True)
+        
+        # wavelength
+        #a = data[:,2] 								
+        a = data[:,2][i:i+num_wavelengths]
+        # flux
+        #b = data[:,1]/1e20							
+        #b = data[:,2]
+        b = data[:,3][i:i+num_wavelengths]
 
-    # figure(1)
-    pylab.figure(1)
-    pylab.scatter(a,b)
-    #pylab.plot(a,b, 'k-',  markersize=3.0, linewidth=2.0, label='none')
+        # figure(1)
+        pylab.figure(i)
+        pylab.scatter(a,b)
+        #pylab.plot(a,b, 'k-',  markersize=3.0, linewidth=2.0, label='none')
 
-    # axes specific
-    pylab.xlabel(r'Wavelength ($\AA$)')					
-    pylab.ylabel(r'Flux ($10^{20}\ erg\ s^{-1}\ Hz^{-1}\ Ster^{-1}$)')
-    pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
-    pylab.axis([min(a),max(a),min(b),max(b)])
+        # axes specific
+        pylab.xlabel(r'Wavelength ($\AA$)')					
+        pylab.ylabel(r'Flux ($10^{20}\ erg\ s^{-1}\ Hz^{-1}\ Ster^{-1}$)')
+        pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
+        pylab.axis([min(a),max(a),min(b),max(b)])
 
-    pylab.hold(True)
+        pylab.hold(True)
 
-    # load the second data set
-    #data2 = numpy.loadtxt('Te/SPEC_4.out', comments='%',usecols = (1,2)) 	
-    #a2 = data2[:,0]
-    #b2 = data2[:,1]/1e20
+        # load the second data set
+        #data2 = numpy.loadtxt('Te/SPEC_4.out', comments='%',usecols = (1,2)) 	
+        #a2 = data2[:,0]
+        #b2 = data2[:,1]/1e20
 
-    # overplot in figure(1)
-    #pylab.plot(a2,b2, 'r:',  markersize=3.0, linewidth=2.0, label='Te')	
+        # overplot in figure(1)
+        #pylab.plot(a2,b2, 'r:',  markersize=3.0, linewidth=2.0, label='Te')	
 
-    # load the third data set
-    #data3 = numpy.loadtxt('Teff/SPEC_4.out', comments='%',usecols = (1,2)) 	
-    #a3 = data3[:,0]
-    #b3 = data3[:,1]/1e20
+        # load the third data set
+        #data3 = numpy.loadtxt('Teff/SPEC_4.out', comments='%',usecols = (1,2)) 	
+        #a3 = data3[:,0]
+        #b3 = data3[:,1]/1e20
 
-    # overplot in figure(1)
-    #pylab.plot(a3,b3, 'b-.',  markersize=3.0, linewidth=2.0, label='Teff')	
+        # overplot in figure(1)
+        #pylab.plot(a3,b3, 'b-.',  markersize=3.0, linewidth=2.0, label='Teff')	
 
-    pylab.legend()
-    pylab.savefig(new_directory + '/FirstPlot_a.eps')
-    #pylab.show()
+        pylab.legend()
+        pylab.savefig(new_directory + '/' + `i` + '_sed.eps')
+        #pylab.show()
     return
 
     # 1st Modification -- Normalized fluxes
