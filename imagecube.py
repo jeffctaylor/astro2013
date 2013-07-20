@@ -848,7 +848,8 @@ def output_seds(images_with_headers):
     print(`data[:,3][0:num_wavelengths]`)
 
     # for all wavelengths:
-    for i in range(0, num_seds):
+    #for i in range(0, num_seds):
+    for i in range(0, 5):
         print(`i`)
         #print("\t" + `data[:,2][i:i+num_wavelengths]`)
         #print("\t" + `data[:,3][i:i+num_wavelengths]`)
@@ -871,8 +872,8 @@ def output_seds(images_with_headers):
         #pylab.plot(a,b, 'k-',  markersize=3.0, linewidth=2.0, label='none')
 
         # axes specific
-        pylab.xlabel(r'Wavelength ($\AA$)')					
-        pylab.ylabel(r'Flux ($10^{20}\ erg\ s^{-1}\ Hz^{-1}\ Ster^{-1}$)')
+        pylab.xlabel(r'log(Wavelength) (um)')					
+        pylab.ylabel(r'Flux (Jy/pixel)')
         pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
         pylab.semilogx()
         pylab.axis([min(a),max(a),min(b),max(b)])
