@@ -848,11 +848,9 @@ def output_seds(images_with_headers):
     print(`data[:,3][0:num_wavelengths]`)
 
     # for all wavelengths:
-    #for i in range(0, num_seds):
-    for i in range(0, 5):
+    for i in range(0, num_seds):
+    #for i in range(0, 5):
         print(`i`)
-        #print("\t" + `data[:,2][i:i+num_wavelengths]`)
-        #print("\t" + `data[:,3][i:i+num_wavelengths]`)
 
         # change to the desired fonts
         rc('font', family='Times New Roman')
@@ -860,11 +858,15 @@ def output_seds(images_with_headers):
         
         # wavelength
         #a = data[:,2] 								
-        a = data[:,2][i:i+num_wavelengths]
+        a = data[:,2][i*num_wavelengths:(i+1)*num_wavelengths]
         # flux
         #b = data[:,1]/1e20							
         #b = data[:,2]
-        b = data[:,3][i:i+num_wavelengths]
+        b = data[:,3][i*num_wavelengths:(i+1)*num_wavelengths]
+        #b = data[:,3][i:i+num_wavelengths]
+
+        print("\tWavelength (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `a`)
+        print("\tFlux (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `b`)
 
         # figure(1)
         pylab.figure(i)
