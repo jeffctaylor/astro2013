@@ -874,6 +874,7 @@ def output_seds(images_with_headers):
         pylab.xlabel(r'Wavelength ($\AA$)')					
         pylab.ylabel(r'Flux ($10^{20}\ erg\ s^{-1}\ Hz^{-1}\ Ster^{-1}$)')
         pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
+        pylab.semilogx()
         pylab.axis([min(a),max(a),min(b),max(b)])
 
         pylab.hold(True)
