@@ -45,6 +45,86 @@ import numpy
 import scipy, pylab
 from matplotlib import rc
 
+NYQUIST_SAMPLING_RATE = 3.3
+"""
+Constant: NYQUIST_SAMPLING_RATE
+
+Some explanation of where this value comes from.
+
+"""
+
+MJY_PER_SR_TO_JY_PER_PIXEL = 2.3504 * 10**(-5)
+"""
+Constant: MJY_PER_SR_TO_JY_PER_PIXEL
+
+Factor for converting from MJy/sr to Jy/pixel
+
+"""
+
+FUV_LAMBDA_CON = 1.40 * 10**(-15)
+"""
+Constant: FUV_LAMBDA_CON
+
+Some explanation of where this value comes from.
+
+"""
+
+NUV_LAMBDA_CON = 2.06 * 10**(-16)
+"""
+Constant: NUV_LAMBDA_CON
+
+Some explanation of where this value comes from.
+
+"""
+
+FVEGA_J = 1594
+"""
+Constant: FVEGA_J
+
+Flux value of Vega for the 2MASS J filter.
+
+"""
+
+FVEGA_H = 1024
+"""
+Constant: FVEGA_H
+
+Flux value of Vega for the 2MASS H filter.
+
+"""
+
+FVEGA_KS = 666.7
+"""
+Constant: FVEGA_KS
+
+Flux value of Vega for the 2MASS Ks filter.
+
+"""
+
+WAVELENGTH_2MASS_J = 1.2409
+"""
+Constant: WAVELENGTH_2MASS_J
+
+Wavelength for the 2MASS J filter
+
+"""
+
+WAVELENGTH_2MASS_H = 1.6514
+"""
+Constant: WAVELENGTH_2MASS_H
+
+Wavelength for the 2MASS H filter
+
+"""
+
+WAVELENGTH_2MASS_KS = 2.1656
+"""
+Constant: WAVELENGTH_2MASS_KS
+
+Wavelength for the 2MASS Ks filter
+
+"""
+
 def is_number(s):
     """
     Checks whether the input value is a number or not.
@@ -216,12 +296,12 @@ def get_conversion_factor(header, instrument):
         # NOTEOTSELF: This is a hardcoded value from what Sophia gave me.
         # I would like to see if we could also obtain this from units.
         # The native "flux unit" is MJy/sr and we convert it to Jy/pixel
-        conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
+        conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
 
     elif (instrument == 'MIPS'):
         pixelscale = get_native_pixelscale(header, 'MIPS')
         #print("Pixel scale: " + `pixelscale`)
-        conversion_factor = (2.3504 * 10**(-5)) * (pixelscale**2)
+        conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
 
     elif (instrument == 'GALEX'):
         wavelength = u.um.to(u.angstrom, header['WAVELENG'])
@@ -230,9 +310,9 @@ def get_conversion_factor(header, instrument):
         # I am using a < comparison here to account for the possibility that the given
         # wavelength is not EXACTLY 1520 AA or 2310 AA
         if (wavelength < 2000): 
-            f_lambda_con = 1.40 * 10**(-15)
+            f_lambda_con = FUV_LAMBDA_CON
         else:
-            f_lambda_con = 2.06 * 10**(-16)
+            f_lambda_con = NUV_LAMBDA_CON
         conversion_factor = ((10**23) * f_lambda_con * wavelength**2) / (constants.c.to('angstrom/s').value)
         #print("lambda^2/c = " + `(wavelength**2) / (constants.c.to('angstrom/s').value)`)
 
@@ -240,11 +320,11 @@ def get_conversion_factor(header, instrument):
         #print("MAGZP: " + `header['MAGZP']`)
         fvega = 0
         if (header['FILTER'] == 'j'):
-            fvega = 1594
+            fvega = FVEGA_J
         elif (header['FILTER'] == 'h'):
-            fvega = 1024
+            fvega = FVEGA_H
         elif (header['FILTER'] == 'k'):
-            fvega = 666.7
+            fvega = FVEGA_KS
         conversion_factor = fvega * 10**(-0.4 * header['MAGZP'])
 
     elif (instrument == 'PACS'):
@@ -307,15 +387,42 @@ def get_wavelength(header):
         wavelength = header['FILTER']
         instrument = get_instrument(header)
         if (instrument == '2MASS'):
-            if (header['FILTER'] == 'j'):
-                wavelength = 1.2409
-            elif (header['FILTER'] == 'h'):
-                wavelength = 1.6514
-            elif (header['FILTER'] == 'k'):
-                wavelength = 2.1656
+            if (header['FILTER'].lower() == 'j'):
+                wavelength = WAVELENGTH_2MASS_J
+            elif (header['FILTER'].lower() == 'h'):
+                wavelength = WAVELENGTH_2MASS_H
+            elif (header['FILTER'].lower() == 'k'):
+                wavelength = WAVELENGTH_2MASS_KS
         wavelength_units = 'micron'
 
     return wavelength, wavelength_units
+
+def wavelength_range(wavelengths, lower, upper):
+    """
+    Determines if the provided list of wavelengths contains a value
+    between the given lower and upper bounds.
+
+    Parameters
+    ----------
+    wavelengths: list
+        A list of wavelength values.
+    lower: float
+        The lower bound to check.
+    upper: float
+        The upper bound to check.
+
+    Returns
+    -------
+    return_value: boolean
+        True if there is a value in the list of wavelengths that is
+        between the lower and upper bounds; False otherwise.
+    """
+
+    return_value = False
+    for i in wavelengths:
+        if (i >= lower and i <= upper):
+            return_value = True
+    return return_value
 
 # NOTETOSELF: Sophia will be providing proper wavelength ranges to check here.
 def get_fwhm_value(images_with_headers):
@@ -371,33 +478,6 @@ def get_fwhm_value(images_with_headers):
         fwhm = 10.5
 
     return fwhm
-
-def wavelength_range(wavelengths, lower, upper):
-    """
-    Determines if the provided list of wavelengths contains a value
-    between the given lower and upper bounds.
-
-    Parameters
-    ----------
-    wavelengths: list
-        A list of wavelength values.
-    lower: float
-        The lower bound to check.
-    upper: float
-        The upper bound to check.
-
-    Returns
-    -------
-    return_value: boolean
-        True if there is a value in the list of wavelengths that is
-        between the lower and upper bounds; False otherwise.
-    """
-
-    return_value = False
-    for i in wavelengths:
-        if (i >= lower and i <= upper):
-            return_value = True
-    return return_value
 
 def parse_command_line():
     """
@@ -747,9 +827,8 @@ def resample_images(images_with_headers):
     # create a fake image "grid_final_resample.fits", to which we will register all fits images
     fwhm_input = get_fwhm_value(images_with_headers)
     print("fwhm: " + `fwhm_input`)
-    nyquist_sampling_rate = 3.3
     # parameter1 & parameter2 depend on the "fwhm" of the convolution step, and following the Nyquist sampling rate. 
-    parameter1 = phys_size / (fwhm_input / nyquist_sampling_rate) 
+    parameter1 = phys_size / (fwhm_input / NYQUIST_SAMPLING_RATE) 
     print("ncols, nlines: " + `parameter1`)
     parameter2 = parameter1
     artdata.mkpattern(input="grid_final_resample.fits", output="grid_final_resample.fits", pattern="constant", pixtype="double", ndim=2, ncols=parameter1, nlines=parameter2)
@@ -765,7 +844,7 @@ def resample_images(images_with_headers):
     # tag the desired WCS in the fake image "apixel.fits"
     # NOTETOSELF: in the code Sophia gave me, lngunit was given as "hours", but I have
     # changed it to "degrees".
-    iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=parameter1/2, yref=parameter2/2, xmag=fwhm_input/nyquist_sampling_rate, ymag=fwhm_input/nyquist_sampling_rate, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
+    iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=parameter1/2, yref=parameter2/2, xmag=fwhm_input/NYQUIST_SAMPLING_RATE, ymag=fwhm_input/NYQUIST_SAMPLING_RATE, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
 
     for i in range(0, len(images_with_headers)):
         original_filename = os.path.basename(images_with_headers[i][2])
