@@ -584,6 +584,7 @@ def convert_images(images_with_headers):
         # Do a Jy/pixel unit conversion and save it as a new .fits file
         converted_data_array = images_with_headers[i][0] * conversion_factor
         converted_data.append(converted_data_array)
+        images_with_headers[i][1]['BUNIT'] = 'Jy/pixel'
         hdu = fits.PrimaryHDU(converted_data_array, images_with_headers[i][1])
         print("Creating " + converted_filename)
         hdu.writeto(converted_filename, clobber=True)
