@@ -830,12 +830,13 @@ def output_seds(images_with_headers):
         #print(`wavelengths[i]`)
         for j in range(len(all_image_data[i])):
             for k in range(len(all_image_data[i][j])):
-                sed_data.append((j, k, wavelengths[i], all_image_data[i][j][k]))
+                sed_data.append((int(j), int(k), wavelengths[i], all_image_data[i][j][k]))
                 #print("(" + `j` + "," + `k` + ")" + '\t' + `all_image_data[i][j][k]` + ' ' + `wavelengths[i]`)
 
     #print(`sorted(sed_data)`)
     data = numpy.copy(sorted(sed_data))
-    numpy.savetxt('test.out', data, delimiter=',')
+    #numpy.savetxt('test.out', data, delimiter=',')
+    numpy.savetxt('test.out', data, fmt='%d,%d,%f,%f', header='x, y, wavelength (um), flux units (Jy/pixel)')
     #print("len(data): " + `len(data)`)
     num_seds = int(len(data) / num_wavelengths)
     #print("Number of SEDs to create: " + `num_seds`)
