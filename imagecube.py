@@ -813,7 +813,7 @@ def output_seds(images_with_headers):
         input_filename = input_directory + original_filename  + "_resampled.fits"
         wavelength = get_wavelength(images_with_headers[i][1])[0]
         wavelengths.append(wavelength)
-        print("Input filename: " + input_filename)
+        #print("Input filename: " + input_filename)
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
@@ -835,9 +835,10 @@ def output_seds(images_with_headers):
 
     #print(`sorted(sed_data)`)
     data = numpy.copy(sorted(sed_data))
-    print("len(data): " + `len(data)`)
+    numpy.savetxt('test.out', data, delimiter=',')
+    #print("len(data): " + `len(data)`)
     num_seds = int(len(data) / num_wavelengths)
-    print("Number of SEDs to create: " + `num_seds`)
+    #print("Number of SEDs to create: " + `num_seds`)
     # just the wavelengths:
     #print(`data[:,2]`)
     # just the z-values:
@@ -849,7 +850,7 @@ def output_seds(images_with_headers):
     # for all wavelengths:
     for i in range(0, num_seds):
     #for i in range(0, 5):
-        print(`i`)
+        #print(`i`)
 
         # change to the desired fonts
         rc('font', family='Times New Roman')
@@ -866,10 +867,13 @@ def output_seds(images_with_headers):
         x_values = data[:,0][i*num_wavelengths:(i+1)*num_wavelengths]
         y_values = data[:,1][i*num_wavelengths:(i+1)*num_wavelengths]
 
-        print("\tx-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `x_values`)
-        print("\ty-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `y_values`)
-        print("\tWavelength (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `wavelength_values`)
-        print("\tFlux (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `flux_values`)
+        #print("\tx-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `x_values`)
+        #print("\ty-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `y_values`)
+        #print("\tWavelength (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `wavelength_values`)
+        #print("\tFlux (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `flux_values`)
+
+        #for w in range(0, num_wavelengths):
+            #print(`x_values[w]` + "\t" + `y_values[w]` + "\t" + `wavelength_values[w]` + "\t" + `flux_values[w]`)
 
         # figure(1)
         pylab.figure(i)
