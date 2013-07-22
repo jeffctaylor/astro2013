@@ -254,10 +254,10 @@ def get_native_pixelscale(header, instrument):
     elif (instrument == 'MIPS'):
         pixelscale = header['PLTSCALE']
     elif (instrument == 'SPIRE'):
-        pixelscale = u.deg.to(u.arcsec, header['CDELT2'])
+        pixelscale = u.deg.to(u.arcsec, abs(header['CDELT2']))
     else:
         if ('CDELT2' in header):
-            pixelscale = u.deg.to(u.arcsec, header['CDELT2'])
+            pixelscale = u.deg.to(u.arcsec, abs(header['CDELT2']))
 
     if (pixelscale == 0):
         print("The native pixelscale is 0, so something may have gone wrong here.")
