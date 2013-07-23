@@ -185,12 +185,14 @@ def print_usage():
     Displays usage information in case of a command line error.
     """
 
-    print("Usage: " + sys.argv[0] + " --directory <directory> --angular_physical_size <angular_physical_size> [--conversion_factors] [--conversion] [--registration] [--convolution] [--resampling] [--seds]")
+    print("Usage: " + sys.argv[0] + " --directory <directory> --angular_physical_size <angular_physical_size> [--conversion_factors] [--conversion] [--registration] [--convolution] [--resampling] [--seds] [--cleanup] [--ra <ra>] [--dec <dec>]")
     print
     print("directory is the path to the directory containing FITS files to work with")
     print("angular_physical_size is the physical size to map to the object")
     print("conversion_factors will enable a formatted table of conversion factors to be output")
     print("conversion, registration, convolution, resampling, and seds: each of these parameters will enable the corresponding processing step to be performed. Default behaviour is to do none of these steps.")
+    print("ra and dec (optional): the desired RA and Dec, respectively, of the output images.")
+    print("cleanup: if this parameter is present, then output files from previous executions of the script are removed and no processing is done.")
 
 # NOTETOSELF: Other acceptable units: mm, m, Hz
 def wavelength_to_microns(wavelength, unit):
@@ -529,9 +531,11 @@ def parse_command_line():
     global do_resampling
     global do_seds
     global do_cleanup
+    global ra_input
+    global dec_input
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds", "cleanup"])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds", "cleanup", "ra=", "dec="])
     except getopt.GetoptError:
         print("An error occurred. Check your parameters and try again.")
         sys.exit(2)
@@ -554,6 +558,10 @@ def parse_command_line():
             do_seds = True
         if opt in ("--cleanup"):
             do_cleanup = True
+        if opt in ("--ra"):
+            ra_input = float(arg)
+        if opt in ("--dec"):
+            dec_input = float(arg)
 
     # Now make sure that the values we have just grabbed from the command line are 
     # valid.
@@ -677,8 +685,16 @@ def register_images(images_with_headers):
 
     print("Registering images")
     print("phys_size: " + `phys_size`)
-    lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
-    latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
+
+    if (ra_input != ''):
+        lngref_input = ra_input
+    else:
+        lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
+    if (dec_input != ''):
+        latref_input = dec_input
+    else:
+        latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
+
     for i in range(0, len(images_with_headers)):
         # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
         # check that file (about physical size) before doing any more work on this code.
@@ -873,10 +889,15 @@ def resample_images(images_with_headers):
     parameter2 = parameter1
     artdata.mkpattern(input="grid_final_resample.fits", output="grid_final_resample.fits", pattern="constant", pixtype="double", ndim=2, ncols=parameter1, nlines=parameter2)
 
-    lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
-    latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
-    print("lngref: " + `lngref_input` + "; latref: " + `latref_input`)
-
+    if (ra_input != ''):
+        lngref_input = ra_input
+    else:
+        lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
+    if (dec_input != ''):
+        latref_input = dec_input
+    else:
+        latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
+    
     # Then, we tag the desired WCS in this fake image:
     # unlearn some iraf tasks
     iraf.unlearn('ccsetwcs')
@@ -1049,6 +1070,8 @@ def cleanup_output_files():
 if __name__ == '__main__':
     phys_size = ''
     directory = ''
+    ra_input = ''
+    dec_input = ''
     conversion_factors = False
     do_conversion = False
     do_registration = False
@@ -1056,6 +1079,7 @@ if __name__ == '__main__':
     do_resampling = False
     do_seds = False
     do_cleanup = False
+
     parse_command_line()
 
     if (do_cleanup):
