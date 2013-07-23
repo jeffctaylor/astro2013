@@ -45,6 +45,8 @@ import numpy
 import scipy, pylab
 from matplotlib import rc
 
+import astropy.utils.console as console
+
 NYQUIST_SAMPLING_RATE = 3.3
 """
 Constant: NYQUIST_SAMPLING_RATE
@@ -916,7 +918,7 @@ def output_seds(images_with_headers):
 
     """
 
-    print("Outputting SEDs (not implemented yet)")
+    #print("Outputting SEDs.")
 
     all_image_data = []
     wavelengths = []
@@ -967,97 +969,67 @@ def output_seds(images_with_headers):
     #print(`data[:,3][0:num_wavelengths]`)
 
     # for all wavelengths:
-    for i in range(0, num_seds):
-    #for i in range(0, 5):
-        #print(`i`)
+    with console.ProgressBarOrSpinner(num_seds, "Creating SEDs") as bar:
+        for i in range(0, num_seds):
+        #for i in range(0, 5):
+            #print(`i`)
 
-        # change to the desired fonts
-        rc('font', family='Times New Roman')
-        rc('text', usetex=True)
-        
-        # wavelength
-        #a = data[:,2] 								
-        wavelength_values = data[:,2][i*num_wavelengths:(i+1)*num_wavelengths]
-        # flux
-        #b = data[:,1]/1e20							
-        #b = data[:,2]
-        flux_values = data[:,3][i*num_wavelengths:(i+1)*num_wavelengths]
-        #b = data[:,3][i:i+num_wavelengths]
-        x_values = data[:,0][i*num_wavelengths:(i+1)*num_wavelengths]
-        y_values = data[:,1][i*num_wavelengths:(i+1)*num_wavelengths]
+            # change to the desired fonts
+            rc('font', family='Times New Roman')
+            rc('text', usetex=True)
+            
+            # wavelength
+            #a = data[:,2] 								
+            wavelength_values = data[:,2][i*num_wavelengths:(i+1)*num_wavelengths]
+            # flux
+            #b = data[:,1]/1e20							
+            #b = data[:,2]
+            flux_values = data[:,3][i*num_wavelengths:(i+1)*num_wavelengths]
+            #b = data[:,3][i:i+num_wavelengths]
+            x_values = data[:,0][i*num_wavelengths:(i+1)*num_wavelengths]
+            y_values = data[:,1][i*num_wavelengths:(i+1)*num_wavelengths]
 
-        #print("\tx-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `x_values`)
-        #print("\ty-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `y_values`)
-        #print("\tWavelength (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `wavelength_values`)
-        #print("\tFlux (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `flux_values`)
+            #print("\tx-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `x_values`)
+            #print("\ty-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `y_values`)
+            #print("\tWavelength (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `wavelength_values`)
+            #print("\tFlux (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `flux_values`)
 
-        #for w in range(0, num_wavelengths):
-            #print(`x_values[w]` + "\t" + `y_values[w]` + "\t" + `wavelength_values[w]` + "\t" + `flux_values[w]`)
+            #for w in range(0, num_wavelengths):
+                #print(`x_values[w]` + "\t" + `y_values[w]` + "\t" + `wavelength_values[w]` + "\t" + `flux_values[w]`)
 
-        # figure(1)
-        pylab.figure(i)
-        pylab.scatter(wavelength_values,flux_values)
+            # figure(1)
+            pylab.figure(i)
+            pylab.scatter(wavelength_values,flux_values)
 
-        # axes specific
-        pylab.xlabel(r'log(Wavelength) (um)')					
-        pylab.ylabel(r'Flux (Jy/pixel)')
-        pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
-        pylab.semilogx()
-        pylab.axis([min(wavelength_values),max(wavelength_values),min(flux_values),max(flux_values)])
+            # axes specific
+            pylab.xlabel(r'log(Wavelength) (um)')					
+            pylab.ylabel(r'Flux (Jy/pixel)')
+            pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
+            pylab.semilogx()
+            pylab.axis([min(wavelength_values),max(wavelength_values),min(flux_values),max(flux_values)])
 
-        pylab.hold(True)
+            pylab.hold(True)
 
-        # load the second data set
-        #data2 = numpy.loadtxt('Te/SPEC_4.out', comments='%',usecols = (1,2)) 	
-        #a2 = data2[:,0]
-        #b2 = data2[:,1]/1e20
+            # load the second data set
+            #data2 = numpy.loadtxt('Te/SPEC_4.out', comments='%',usecols = (1,2)) 	
+            #a2 = data2[:,0]
+            #b2 = data2[:,1]/1e20
 
-        # overplot in figure(1)
-        #pylab.plot(a2,b2, 'r:',  markersize=3.0, linewidth=2.0, label='Te')	
+            # overplot in figure(1)
+            #pylab.plot(a2,b2, 'r:',  markersize=3.0, linewidth=2.0, label='Te')	
 
-        # load the third data set
-        #data3 = numpy.loadtxt('Teff/SPEC_4.out', comments='%',usecols = (1,2)) 	
-        #a3 = data3[:,0]
-        #b3 = data3[:,1]/1e20
+            # load the third data set
+            #data3 = numpy.loadtxt('Teff/SPEC_4.out', comments='%',usecols = (1,2)) 	
+            #a3 = data3[:,0]
+            #b3 = data3[:,1]/1e20
 
-        # overplot in figure(1)
-        #pylab.plot(a3,b3, 'b-.',  markersize=3.0, linewidth=2.0, label='Teff')	
+            # overplot in figure(1)
+            #pylab.plot(a3,b3, 'b-.',  markersize=3.0, linewidth=2.0, label='Teff')	
 
-        pylab.legend()
-        pylab.savefig(new_directory + '/' + `int(x_values[0])` + '_' + `int(y_values[0])` + '_sed.eps')
-        #pylab.show()
-    return
-
-    # 1st Modification -- Normalized fluxes
-
-    # values start from 0, not from 1
-    n = len(b)										
-    # normalizing continuum flux value
-    bmean1 = (b[0] + b[n-1])/2  								
-
-    # figure(2)
-    pylab.figure(2)
-    # normalized flux - None
-    pylab.plot(a,b/bmean1, 'k-',  markersize=3.0, linewidth=2.0, label='none')		
-
-    pylab.xlabel(r'Wavelength ($\AA$)')
-    pylab.ylabel(r'Flux ($erg\ s^{-1}\ Hz^{-1}\ Ster^{-1}$)')
-    pylab.rc('axes', labelsize=14, linewidth=2, labelcolor='black')
-    pylab.axis([6540, 6590, 0.9, 1.6])
-
-    pylab.hold(True)
-
-    bmean2 = (b2[0] + b2[n-1])/2 
-    # normalized flux - Te
-    pylab.plot(a2,b2/bmean2, 'r:',  markersize=3.0, linewidth=2.0, label='Te')		
-
-    bmean3 = (b3[0] + b3[n-1])/2 
-    # normalized flux - Teff
-    pylab.plot(a3,b3/bmean3, 'b-.',  markersize=3.0, linewidth=2.0, label='Teff')		
-
-    pylab.legend()
-    pylab.savefig('PLOTs/FirstPlot_b.eps')
-    pylab.show()
+            pylab.legend()
+            pylab.savefig(new_directory + '/' + `int(x_values[0])` + '_' + `int(y_values[0])` + '_sed.eps')
+            #pylab.show()
+            bar.update(i)
 
 def cleanup_output_files():
     """
