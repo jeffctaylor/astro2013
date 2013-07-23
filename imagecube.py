@@ -81,7 +81,7 @@ FVEGA_J = 1594
 """
 Constant: FVEGA_J
 
-Flux value of Vega for the 2MASS J filter.
+Flux value (in Jy) of Vega for the 2MASS J filter.
 
 """
 
@@ -89,7 +89,7 @@ FVEGA_H = 1024
 """
 Constant: FVEGA_H
 
-Flux value of Vega for the 2MASS H filter.
+Flux value (in Jy) of Vega for the 2MASS H filter.
 
 """
 
@@ -97,7 +97,7 @@ FVEGA_KS = 666.7
 """
 Constant: FVEGA_KS
 
-Flux value of Vega for the 2MASS Ks filter.
+Flux value (in Jy) of Vega for the 2MASS Ks filter.
 
 """
 
@@ -122,6 +122,39 @@ WAVELENGTH_2MASS_KS = 2.1656
 Constant: WAVELENGTH_2MASS_KS
 
 Wavelength for the 2MASS Ks filter
+
+"""
+
+JY_CONVERSION = 10**23
+"""
+Constant: JY_CONVERSION
+
+This is set to be replaced by Astropy units.
+
+"""
+
+S250_BEAM_AREA = 423
+"""
+Constant: S250_BEAM_AREA
+
+Beam area (arcsec^2) for SPIRE 250 band.
+From SPIRE Observer's Manual v2.4.
+
+"""
+S350_BEAM_AREA = 751
+"""
+Constant: S250_BEAM_AREA
+
+Beam area (arcsec^2) for SPIRE 350 band.
+From SPIRE Observer's Manual v2.4.
+
+"""
+S500_BEAM_AREA = 1587
+"""
+Constant: S500_BEAM_AREA
+
+Beam area (arcsec^2) for SPIRE 500 band.
+From SPIRE Observer's Manual v2.4.
 
 """
 
@@ -313,7 +346,7 @@ def get_conversion_factor(header, instrument):
             f_lambda_con = FUV_LAMBDA_CON
         else:
             f_lambda_con = NUV_LAMBDA_CON
-        conversion_factor = ((10**23) * f_lambda_con * wavelength**2) / (constants.c.to('angstrom/s').value)
+        conversion_factor = ((JY_CONVERSION) * f_lambda_con * wavelength**2) / (constants.c.to('angstrom/s').value)
         #print("lambda^2/c = " + `(wavelength**2) / (constants.c.to('angstrom/s').value)`)
 
     elif (instrument == '2MASS'):
@@ -340,11 +373,11 @@ def get_conversion_factor(header, instrument):
         pixelscale = get_native_pixelscale(header, 'SPIRE')
         wavelength = header['WAVELENG']
         if (wavelength == 250):
-            conversion_factor = (pixelscale**2) / 423
+            conversion_factor = (pixelscale**2) / S250_BEAM_AREA
         elif (wavelength == 350):
-            conversion_factor = (pixelscale**2) / 751
+            conversion_factor = (pixelscale**2) / S350_BEAM_AREA
         elif (wavelength == 500):
-            conversion_factor = (pixelscale**2) / 1587
+            conversion_factor = (pixelscale**2) / S500_BEAM_AREA
     
     return conversion_factor
 
