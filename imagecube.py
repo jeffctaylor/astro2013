@@ -839,6 +839,7 @@ def convolve_images(images_with_headers):
 
         # Do the convolution and save it as a new .fits file
         conv_result = convolve(image_data, gaus_kernel_inp)
+        header['FWHM'] = (fwhm_input, 'The FWHM value used in the convolution step.')
 
         hdu = fits.PrimaryHDU(conv_result, header)
         print("Creating " + convolved_filename)
