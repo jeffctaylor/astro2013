@@ -569,14 +569,6 @@ def parse_command_line():
         if opt in ("--convolution_reference_image"):
             convolution_reference_image = arg
 
-    # Now make sure that the values we have just grabbed from the command
-    # line are valid.
-    # The angular physical size should be a number
-    if (not is_number(phys_size)):
-        print_usage()
-        print("Error: angular physical size must be a number.")
-        sys.exit()
-
     # And the directory should actually exist
     if (not os.path.isdir(directory)):
         print_usage()
