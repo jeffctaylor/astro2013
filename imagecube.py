@@ -185,14 +185,35 @@ def print_usage():
     Displays usage information in case of a command line error.
     """
 
-    print("Usage: " + sys.argv[0] + " --directory <directory> --angular_physical_size <angular_physical_size> [--conversion_factors] [--conversion] [--registration] [--convolution] [--resampling] [--seds] [--cleanup] [--ra <ra>] [--dec <dec>]")
-    print
-    print("directory is the path to the directory containing FITS files to work with")
-    print("angular_physical_size is the physical size to map to the object")
-    print("conversion_factors will enable a formatted table of conversion factors to be output")
-    print("conversion, registration, convolution, resampling, and seds: each of these parameters will enable the corresponding processing step to be performed. Default behaviour is to do none of these steps.")
-    print("ra and dec (optional): the desired RA and Dec, respectively, of the output images.")
-    print("cleanup: if this parameter is present, then output files from previous executions of the script are removed and no processing is done.")
+    print("""
+Usage: """ + sys.argv[0] + """ --directory <directory> --angular_physical_size <angular_physical_size> [--conversion_factors] [--conversion] [--registration] [--convolution] [--resampling] [--seds] [--cleanup] [--ra <ra>] [--dec <dec>] [--help]
+
+directory: the path to the directory containing FITS files to be processed
+
+angular_physical_size: the physical size to map to the object
+
+conversion, registration, convolution, resampling, seds: each of these 
+parameters will enable the corresponding processing step to be performed. 
+Default behaviour is to do none of these steps.
+
+ra, dec: the desired RA and Dec, respectively, of the output images.
+
+cleanup: if this parameter is present, then output files from previous 
+executions of the script are removed and no processing is done.
+
+help: if this parameter is present, this message will be displayed and no 
+processing will be done.
+
+NOTE: the following keywords must be present for optimal image processing:
+    KEYWORD1
+    KEYWORD2
+    KEYWORD3
+    KEYWORD4
+If any of these keywords are missing, imagecube will attempt to determine them 
+as best as possible. The calculated values will be present in the headers of 
+the output images; if they look wrong, please check the headers of your input 
+images and make sure that these values are present.
+    """)
 
 # NOTETOSELF: Other acceptable units: mm, m, Hz
 def wavelength_to_microns(wavelength, unit):
@@ -537,11 +558,14 @@ def parse_command_line():
     global convolution_reference_image
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds", "cleanup", "ra=", "dec=", "reference_image=", "convolution_reference_image="])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds", "cleanup", "ra=", "dec=", "reference_image=", "convolution_reference_image=", "help"])
     except getopt.GetoptError:
         print("An error occurred. Check your parameters and try again.")
         sys.exit(2)
     for opt, arg in opts:
+        if opt in ("--help"):
+            print_usage()
+            sys.exit()
         if opt in ("--angular_physical_size"):
             phys_size = float(arg)
         if opt in ("--directory"):
@@ -699,14 +723,13 @@ def register_images(images_with_headers):
         lngref_input = ra_input
     else:
         lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
+
     if (dec_input != ''):
         latref_input = dec_input
     else:
         latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
 
     for i in range(0, len(images_with_headers)):
-        # NOTETOSELF: the registration part has been updated in another txt file. Make sure to
-        # check that file (about physical size) before doing any more work on this code.
 
         native_pixelscale = get_native_pixelscale(images_with_headers[i][1], get_instrument(images_with_headers[i][1]))
         print("Native pixel scale: " + `native_pixelscale`)
