@@ -546,6 +546,9 @@ def parse_command_line():
             phys_size = float(arg)
         if opt in ("--directory"):
             directory = arg
+            if (not os.path.isdir(directory)):
+                print("Error: The directory cannot be found: " + directory)
+                sys.exit()
         if opt in ("--conversion_factors"):
             conversion_factors = True
         if opt in ("--conversion"):
@@ -569,16 +572,19 @@ def parse_command_line():
         if opt in ("--convolution_reference_image"):
             convolution_reference_image = arg
 
-    # And the directory should actually exist
-    if (not os.path.isdir(directory)):
-        print_usage()
-        print("Error: The specifiied directory cannot be found.")
-        sys.exit()
+    if (main_reference_image != ''):
+        try:
+            with open(directory + '/' + main_reference_image): pass
+        except IOError:
+            print("The file " + main_reference_image + " could not be found in the directory " + directory)
+            sys.exit()
 
-    try:
-        with open('filename'): pass
-    except IOError:
-        print 'Oh dear.'
+    if (convolution_reference_image != ''):
+        try:
+            with open(directory + '/' + convolution_reference_image): pass
+        except IOError:
+            print("The file " + convolution_reference_image + " could not be found in the directory " + directory)
+            sys.exit()
 
 def output_conversion_factors(images_with_headers):
     """
