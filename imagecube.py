@@ -621,7 +621,7 @@ def convert_images(images_with_headers):
         converted_data_array = images_with_headers[i][0] * conversion_factor
         converted_data.append(converted_data_array)
         images_with_headers[i][1]['BUNIT'] = 'Jy/pixel'
-        images_with_headers[i][1]['JYPXFACT'] = (conversion_factor, 'Used to convert original BUNIT into Jy/pixel')
+        images_with_headers[i][1]['JYPXFACT'] = (conversion_factor, 'Factor to convert original BUNIT into Jy/pixel.')
         hdu = fits.PrimaryHDU(converted_data_array, images_with_headers[i][1])
         print("Creating " + converted_filename)
         hdu.writeto(converted_filename, clobber=True)
