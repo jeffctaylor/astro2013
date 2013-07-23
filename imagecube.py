@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+
 # imagecube
 # This package accepts FITS images from the user and delivers images that have been
 # converted to the same flux units, registered to a common world coordinate system
@@ -11,9 +13,6 @@
 # NOTETOSELF: make sure that the conventions at http://docs.astropy.org/en/latest/development/codeguide.html#standard-output-warnings-and-errors 
 # are being followed. Maybe we can have a --verbose mode where extra
 # information gets printed to stdout.
-
-# NOTETOSELF: Maybe a --cleanup parameter that gets rid of extraneous
-# files that get created a long the way - e.g. fake FITS images.
 
 from __future__ import print_function, division
 
@@ -40,7 +39,7 @@ from astropy.io import fits
 from astropy.nddata import make_kernel, convolve
 from astropy import units as u
 from astropy import constants
-import numpy
+import numpy as np
 
 import scipy, pylab
 from matplotlib import rc
@@ -657,7 +656,7 @@ def get_herschel_mean(images_with_headers, keyword):
         if (instrument == 'PACS' or instrument == 'SPIRE'):
             value = images_with_headers[i][1][keyword]
             values.append(value)
-    return_value = numpy.mean(values)
+    return_value = np.mean(values)
     return return_value
 
 # NOTETOSELF: try to do this from the converted_data array first.
@@ -954,9 +953,9 @@ def output_seds(images_with_headers):
                 #print("(" + `j` + "," + `k` + ")" + '\t' + `all_image_data[i][j][k]` + ' ' + `wavelengths[i]`)
 
     #print(`sorted(sed_data)`)
-    data = numpy.copy(sorted(sed_data))
-    #numpy.savetxt('test.out', data, delimiter=',')
-    numpy.savetxt('test.out', data, fmt='%d,%d,%f,%f', header='x, y, wavelength (um), flux units (Jy/pixel)')
+    data = np.copy(sorted(sed_data))
+    #np.savetxt('test.out', data, delimiter=',')
+    np.savetxt('test.out', data, fmt='%d,%d,%f,%f', header='x, y, wavelength (um), flux units (Jy/pixel)')
     #print("len(data): " + `len(data)`)
     num_seds = int(len(data) / num_wavelengths)
     #print("Number of SEDs to create: " + `num_seds`)
@@ -1011,7 +1010,7 @@ def output_seds(images_with_headers):
             pylab.hold(True)
 
             # load the second data set
-            #data2 = numpy.loadtxt('Te/SPEC_4.out', comments='%',usecols = (1,2)) 	
+            #data2 = np.loadtxt('Te/SPEC_4.out', comments='%',usecols = (1,2)) 	
             #a2 = data2[:,0]
             #b2 = data2[:,1]/1e20
 
@@ -1019,7 +1018,7 @@ def output_seds(images_with_headers):
             #pylab.plot(a2,b2, 'r:',  markersize=3.0, linewidth=2.0, label='Te')	
 
             # load the third data set
-            #data3 = numpy.loadtxt('Teff/SPEC_4.out', comments='%',usecols = (1,2)) 	
+            #data3 = np.loadtxt('Teff/SPEC_4.out', comments='%',usecols = (1,2)) 	
             #a3 = data3[:,0]
             #b3 = data3[:,1]/1e20
 
