@@ -49,7 +49,7 @@ NYQUIST_SAMPLING_RATE = 3.3
 """
 Constant: NYQUIST_SAMPLING_RATE
 
-Some explanation of where this value comes from.
+Some explanation of where this value comes from is needed.
 
 """
 
@@ -349,6 +349,7 @@ def get_conversion_factor(header, instrument):
         conversion_factor = ((JY_CONVERSION) * f_lambda_con * wavelength**2) / (constants.c.to('angstrom/s').value)
         #print("lambda^2/c = " + `(wavelength**2) / (constants.c.to('angstrom/s').value)`)
 
+    # This calculation comes from the definition of the magnitude system.
     elif (instrument == '2MASS'):
         #print("MAGZP: " + `header['MAGZP']`)
         fvega = 0
