@@ -569,8 +569,6 @@ def parse_command_line():
         print("Error: The specifiied directory cannot be found.")
         sys.exit()
 
-# NOTETOSELF: maybe we can add a separator parameter - e.g. if the user wants the
-# values to be comma-separated.
 def output_conversion_factors(images_with_headers):
     """
     Prints a formatted list of instruments, wavelengths, and conversion
@@ -623,6 +621,7 @@ def convert_images(images_with_headers):
         converted_data_array = images_with_headers[i][0] * conversion_factor
         converted_data.append(converted_data_array)
         images_with_headers[i][1]['BUNIT'] = 'Jy/pixel'
+        images_with_headers[i][1]['JYPXFACT'] = (conversion_factor, 'Used to convert original BUNIT into Jy/pixel')
         hdu = fits.PrimaryHDU(converted_data_array, images_with_headers[i][1])
         print("Creating " + converted_filename)
         hdu.writeto(converted_filename, clobber=True)
@@ -1108,8 +1107,8 @@ if __name__ == '__main__':
     images_with_headers_unsorted = zip(image_data, headers, filenames)
     images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELENG'])
 
-    if (conversion_factors):
-        output_conversion_factors(images_with_headers)
+    #if (conversion_factors):
+        #output_conversion_factors(images_with_headers)
 
     if (do_conversion):
         convert_images(images_with_headers)
