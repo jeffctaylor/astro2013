@@ -533,9 +533,11 @@ def parse_command_line():
     global do_cleanup
     global ra_input
     global dec_input
+    global main_reference_image
+    global convolution_reference_image
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds", "cleanup", "ra=", "dec="])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds", "cleanup", "ra=", "dec=", "reference_image=", "convolution_reference_image="])
     except getopt.GetoptError:
         print("An error occurred. Check your parameters and try again.")
         sys.exit(2)
@@ -562,9 +564,13 @@ def parse_command_line():
             ra_input = float(arg)
         if opt in ("--dec"):
             dec_input = float(arg)
+        if opt in ("--reference_image"):
+            main_reference_image = arg
+        if opt in ("--convolution_reference_image"):
+            convolution_reference_image = arg
 
-    # Now make sure that the values we have just grabbed from the command line are 
-    # valid.
+    # Now make sure that the values we have just grabbed from the command
+    # line are valid.
     # The angular physical size should be a number
     if (not is_number(phys_size)):
         print_usage()
@@ -576,6 +582,11 @@ def parse_command_line():
         print_usage()
         print("Error: The specifiied directory cannot be found.")
         sys.exit()
+
+    try:
+        with open('filename'): pass
+    except IOError:
+        print 'Oh dear.'
 
 def output_conversion_factors(images_with_headers):
     """
@@ -1072,6 +1083,8 @@ if __name__ == '__main__':
     directory = ''
     ra_input = ''
     dec_input = ''
+    main_reference_image = ''
+    convolution_reference_image = ''
     conversion_factors = False
     do_conversion = False
     do_registration = False
