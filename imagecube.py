@@ -893,6 +893,45 @@ def convolve_images(images_with_headers):
         print("Creating " + convolved_filename)
         hdu.writeto(convolved_filename, clobber=True)
 
+def create_data_cube(images_with_headers):
+    """
+    Creates a data cube from the provided images.
+
+
+    Parameters
+    ----------
+    images_with_headers: zipped list structure
+        A structure containing headers and image data for all FITS input
+        images.
+
+    Notes
+    -----
+    Currently we are just using the header of the first input image.
+    This should be changed to something more appropriate.
+    """
+    print("Creating a data cube.")
+    resampled_images = []
+    resampled_headers = []
+
+    new_directory = directory + "/datacube/"
+    print("New directory: " + new_directory)
+    if not os.path.exists(new_directory):
+        os.makedirs(new_directory)
+
+    for i in range(0, len(images_with_headers)):
+        original_filename = os.path.basename(images_with_headers[i][2])
+        original_directory = os.path.dirname(images_with_headers[i][2])
+        resampled_filename = original_directory + "/resampled/" + original_filename  + "_resampled.fits"
+
+        hdulist = fits.open(resampled_filename)
+        header = hdulist[0].header
+        resampled_headers.append(header)
+        image = hdulist[0].data
+        resampled_images.append(image)
+        hdulist.close()
+
+    fits.writeto(new_directory + '/' + 'datacube.fits', np.copy(resampled_images), resampled_headers[0], clobber=True)
+
 def resample_images(images_with_headers):
     """
     Resamples all of the images to a common pixel grid.
@@ -957,6 +996,8 @@ def resample_images(images_with_headers):
 
         # register the science fits image
         iraf.wregister(input=input_filename, reference="grid_final_resample.fits", output=resampled_filename, fluxconserve="yes")
+
+    create_data_cube(images_with_headers)
 
 def output_seds(images_with_headers):
     """
