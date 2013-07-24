@@ -67,7 +67,7 @@ FUV_LAMBDA_CON = 1.40 * 10**(-15)
 """
 Code constant: FUV_LAMBDA_CON
 
-Calibration from CPS to Flux in [erg sec-1 cm-2 Å-1], as given in GALEX
+Calibration from CPS to Flux in [erg sec-1 cm-2 AA-1], as given in GALEX
 for the FUV filter.
 http://galexgi.gsfc.nasa.gov/docs/galex/FAQ/counts_background.html
 
@@ -77,7 +77,7 @@ NUV_LAMBDA_CON = 2.06 * 10**(-16)
 """
 Code constant: NUV_LAMBDA_CON
 
-Calibration from CPS to Flux in [erg sec-1 cm-2 Å-1], as given in GALEX
+Calibration from CPS to Flux in [erg sec-1 cm-2 AA-1], as given in GALEX
 for the NUV filter.
 http://galexgi.gsfc.nasa.gov/docs/galex/FAQ/counts_background.html
 
