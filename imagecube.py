@@ -198,6 +198,12 @@ Default behaviour is to do none of these steps.
 
 ra, dec: the desired RA and Dec, respectively, of the output images.
 
+reference_image: information from the header of this image will be used in
+various processing steps.
+
+convolution_reference_image: information from the header of this image will be
+used in the convolution step.
+
 cleanup: if this parameter is present, then output files from previous 
 executions of the script are removed and no processing is done.
 
