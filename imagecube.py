@@ -242,49 +242,12 @@ NOTE: the following keywords must be present, along with a comment containing th
     WAVELNTH: the representative wavelength (in micrometres) of the filter bandpass
     CDELT1: the pixelscale (in degrees) along the x-axis
     CDELT2: the pixelscale (in degrees) along the y-axis
+    INSTRUME: this provides the instrument information
 If any of these keywords are missing, imagecube will attempt to determine them 
 as best as possible. The calculated values will be present in the headers of 
 the output images; if they look wrong, please check the headers of your input 
 images and make sure that these values are present.
     """)
-
-# NOTETOSELF: other keywords may be acceptable
-# NOTETOSELF: pass the filenames to this function as well so we know which file we are
-# on in case of problems.
-# NOTETOSELF: proper error checking needed.
-def get_instrument(header):
-    """
-    Determines which instrument the data in a FITS file came from.
-    This is done by checking certain keywords in the FITS header.
-
-    Parameters
-    ----------
-    header: FITS file header
-        The header of the FITS file to be checked.
-
-    Returns
-    -------
-    instrument: string
-        The instrument which the data in the FITS file came from.
-    """
-    instrument = ''
-    # Check for INSTRUME keyword first
-    if ('INSTRUME' in header):
-        instrument = header['INSTRUME']
-    # Then check for 'galex' in the INF0001 keyword
-    elif ('INF0001' in header):
-        if ('galex' in header['INF0001']):
-            instrument = 'GALEX'
-    # Finally, check to see if the 'ORIGIN' keyword has a value of '2MASS'
-    elif ('ORIGIN' in header):
-        if ('2MASS' in header['ORIGIN']):
-        #if (header['ORIGIN'] == '2MASS'):
-            instrument = '2MASS'
-    else:
-        print("could not determine instrument; please insert appropriate information in the header.")
-        sys.exit()
-
-    return instrument
 
 # NOTETOSELF: this value should be returned in arcsec, so some additional checking will
 # be needed to ensure that the proper units are being used.
@@ -363,7 +326,7 @@ def get_conversion_factor(header, instrument):
         conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
 
     elif (instrument == 'GALEX'):
-        wavelength = u.um.to(u.angstrom, header['WAVELENG'])
+        wavelength = u.um.to(u.angstrom, header['WAVELNTH'])
         #print("Speed of light: " + `constants.c.to('um/s').value`)
         f_lambda_con = 0
         # I am using a < comparison here to account for the possibility that the given
@@ -398,7 +361,7 @@ def get_conversion_factor(header, instrument):
 
     elif (instrument == 'SPIRE'):
         pixelscale = get_native_pixelscale(header, 'SPIRE')
-        wavelength = header['WAVELENG']
+        wavelength = header['WAVELNTH']
         if (wavelength == 250):
             conversion_factor = (pixelscale**2) / S250_BEAM_AREA
         elif (wavelength == 350):
@@ -407,137 +370,6 @@ def get_conversion_factor(header, instrument):
             conversion_factor = (pixelscale**2) / S500_BEAM_AREA
     
     return conversion_factor
-
-# NOTETOSELF: I wonder if it might be best to force a type on the wavelength - e.g.
-# float - so that this doesn't have to be done later by other functions.
-# NOTETOSELF: proper error checking - e.g. the wavelength should not actually end up
-# as 0 after all the cases have been checked.
-# NOTETOSELF: Would it be best to force the units to be microns? Check to see how this
-# would impact other functions first.
-def get_wavelength(header):
-    """
-    Returns the wavelength and its units for a given FITS image.
-
-    Parameters
-    ----------
-    header: FITS file header
-        The header of the FITS file to be checked.
-
-    Returns
-    -------
-    wavelength:
-        The wavelength value for the given FITS image.
-    wavelength_units: string
-        The units of the wavelength (generally microns, but can be other
-        units as well).
-    """
-
-    wavelength = 0
-    wavelength_units = ''
-    if ('WAVELENG' in header):
-        wavelength = header['WAVELENG']
-        wavelength_units = header.comments['WAVELENG']
-    elif ('WAVELNTH' in header):
-        # NOTETOSELF: microns are not necessarily used here - check the header comments
-        wavelength = header['WAVELNTH']
-        wavelength_units = 'micron'
-    elif ('FILTER' in header):
-        # NOTETOSELF: Check the actual instrument to make sure that this should be in
-        # microns.
-        wavelength = header['FILTER']
-        instrument = get_instrument(header)
-        if (instrument == '2MASS'):
-            if (header['FILTER'].lower() == 'j'):
-                wavelength = WAVELENGTH_2MASS_J
-            elif (header['FILTER'].lower() == 'h'):
-                wavelength = WAVELENGTH_2MASS_H
-            elif (header['FILTER'].lower() == 'k'):
-                wavelength = WAVELENGTH_2MASS_KS
-        wavelength_units = 'micron'
-
-    return wavelength, wavelength_units
-
-def wavelength_range(wavelengths, lower, upper):
-    """
-    Determines if the provided list of wavelengths contains a value
-    between the given lower and upper bounds.
-
-    Parameters
-    ----------
-    wavelengths: list
-        A list of wavelength values.
-    lower: float
-        The lower bound to check.
-    upper: float
-        The upper bound to check.
-
-    Returns
-    -------
-    return_value: boolean
-        True if there is a value in the list of wavelengths that is
-        between the lower and upper bounds; False otherwise.
-    """
-
-    return_value = False
-    for i in wavelengths:
-        if (i >= lower and i <= upper):
-            return_value = True
-    return return_value
-
-# NOTETOSELF: Sophia will be providing proper wavelength ranges to check here.
-def get_fwhm_value(images_with_headers):
-    """
-    Determines the fwhm value given the instrument and wavelength values
-    that are present in all of the input images.
-    This function depends on data taken from Aniano et al. 2011.
-
-    Parameters
-    ----------
-    images_with_headers: zipped list structure
-        A structure containing headers and image data for all FITS input
-        images.
-
-    Returns
-    -------
-    fwhm: float
-        The fwhm value.
-    """
-
-    fwhm = 0
-    instruments = []
-    instruments_with_wavelengths = {}
-    # Determine which instruments and wavelengths we have data from
-    # This is done by creating a dictionary with instruments as the keys,
-    # and a list of wavelengths from each instrument as values.
-    for i in range(0, len(images_with_headers)):
-        instrument = get_instrument(images_with_headers[i][1])
-        # The [0] is here because we only need the wavelength, not the units as well.
-        wavelength = get_wavelength(images_with_headers[i][1])[0]
-        if (instrument in instruments_with_wavelengths):
-            instruments_with_wavelengths[instrument].append(wavelength)
-        else:
-            instruments_with_wavelengths[instrument] = [wavelength]
-
-    if ('MIPS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['MIPS'], 140, 170)):
-        fwhm = 76
-    elif ('SPIRE' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['SPIRE'], 490, 510)):
-        fwhm = 43
-    elif ('MIPS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['MIPS'], 50, 90)):
-        fwhm = 37
-    elif ('SPIRE' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['SPIRE'], 300, 400)):
-        fwhm = 30
-    elif ('SPIRE' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['SPIRE'], 200, 299)):
-        fwhm = 22
-    elif ('PACS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['PACS'], 140, 180)):
-        fwhm = 18
-    elif ('MIPS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['MIPS'], 18, 30)):
-        fwhm = 13
-    elif ('PACS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['PACS'], 90, 110)):
-        fwhm = 12.5
-    elif ('PACS' in instruments_with_wavelengths and wavelength_range(instruments_with_wavelengths['PACS'], 60, 80)):
-        fwhm = 10.5
-
-    return fwhm
 
 def parse_command_line():
     """
@@ -612,27 +444,6 @@ def parse_command_line():
             print("The file " + convolution_reference_image + " could not be found in the directory " + directory)
             sys.exit()
 
-def output_conversion_factors(images_with_headers):
-    """
-    Prints a formatted list of instruments, wavelengths, and conversion
-    factors to Jy/pixel
-
-    Parameters
-    ----------
-    images_with_headers: zipped list structure
-        A structure containing headers and image data for all FITS input
-        images.
-
-    """
-
-    print("Instrument\tWavelength\tConversion factor (to Jy/pixel)")
-    for i in range(0, len(images_with_headers)):
-        wavelength = images_with_headers[i][1]['WAVELENG']
-        wavelength_units = images_with_headers[i][1].comments['WAVELENG']
-        instrument = get_instrument(images_with_headers[i][1])
-        conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
-        print(instrument + '\t' + `wavelength` + '\t' + `conversion_factor`)
-
 def convert_images(images_with_headers):
     """
     Converts all of the input images' native "flux units" to Jy/pixel
@@ -649,7 +460,7 @@ def convert_images(images_with_headers):
 
     print("Converting images")
     for i in range(0, len(images_with_headers)):
-        instrument = get_instrument(images_with_headers[i][1])
+        instrument = images_with_headers[i][1]['INSTRUME']
         conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
 
         # Some manipulation of filenames and directories
@@ -694,7 +505,7 @@ def get_herschel_mean(images_with_headers, keyword):
     values = []
     return_value = 0
     for i in range(0, len(images_with_headers)):
-        instrument = get_instrument(images_with_headers[i][1])
+        instrument = images_with_headers[i][1]['INSTRUME']
         if (instrument == 'PACS' or instrument == 'SPIRE'):
             value = images_with_headers[i][1][keyword]
             values.append(value)
@@ -733,9 +544,9 @@ def register_images(images_with_headers):
 
     for i in range(0, len(images_with_headers)):
 
-        native_pixelscale = get_native_pixelscale(images_with_headers[i][1], get_instrument(images_with_headers[i][1]))
+        native_pixelscale = get_native_pixelscale(images_with_headers[i][1], images_with_headers[i][1]['INSTRUME'])
         print("Native pixel scale: " + `native_pixelscale`)
-        print("Instrument: " + `get_instrument(images_with_headers[i][1])`)
+        print("Instrument: " + `images_with_headers[i][1]['INSTRUME']`)
         print("BUNIT: " + `images_with_headers[i][1]['BUNIT']`)
 
         original_filename = os.path.basename(images_with_headers[i][2])
@@ -856,10 +667,10 @@ def convolve_images(images_with_headers):
 
     for i in range(0, len(images_with_headers)):
 
-        native_pixelscale = get_native_pixelscale(images_with_headers[i][1], get_instrument(images_with_headers[i][1]))
+        native_pixelscale = get_native_pixelscale(images_with_headers[i][1], images_with_headers[i][1]['INSTRUME'])
         sigma_input = fwhm_input / (2* math.sqrt(2*math.log (2) ) * native_pixelscale)
         print("Native pixel scale: " + `native_pixelscale`)
-        print("Instrument: " + `get_instrument(images_with_headers[i][1])`)
+        print("Instrument: " + `images_with_headers[i][1]['INSTRUME']`)
 
         original_filename = os.path.basename(images_with_headers[i][2])
         original_directory = os.path.dirname(images_with_headers[i][2])
@@ -1026,7 +837,7 @@ def output_seds(images_with_headers):
         new_directory = original_directory + "/seds/"
         input_directory = original_directory + "/resampled/"
         input_filename = input_directory + original_filename  + "_resampled.fits"
-        wavelength = get_wavelength(images_with_headers[i][1])[0]
+        wavelength = images_with_headers[i][1]['WAVELNTH']
         wavelengths.append(wavelength)
         #print("Input filename: " + input_filename)
         if not os.path.exists(new_directory):
@@ -1194,7 +1005,7 @@ if __name__ == '__main__':
         filename = os.path.splitext(hdulist.filename())[0]
         hdulist.close()
         wavelength = header['WAVELNTH']
-        #wavelength_units = header.comments['WAVELENG']
+        #wavelength_units = header.comments['WAVELNTH']
         #print("Wavelength " + `wavelength_microns` + "; Sample image value: " + `image[30][30]`)
         # NOTETOSELF: don't overwrite the header value here. Either create a new keyword,
         # say, WLMICRON, or include the original value in a comment.
@@ -1203,9 +1014,9 @@ if __name__ == '__main__':
         headers.append(header)
         filenames.append(filename)
 
-    # Sort the lists by their WAVELENG value
+    # Sort the lists by their WAVELNTH value
     images_with_headers_unsorted = zip(image_data, headers, filenames)
-    images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELENG'])
+    images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELNTH'])
 
     #if (conversion_factors):
         #output_conversion_factors(images_with_headers)
