@@ -249,44 +249,6 @@ the output images; if they look wrong, please check the headers of your input
 images and make sure that these values are present.
     """)
 
-# NOTETOSELF: this value should be returned in arcsec, so some additional checking will
-# be needed to ensure that the proper units are being used.
-def get_native_pixelscale(header, instrument):
-    """
-    Returns the native pixelscale of the given instrument. Depending on the
-    instrument, the pixelscale can be located in different header keywords.
-
-    Parameters
-    ----------
-    header: FITS file header
-        The header of the FITS file to be checked.
-
-    instrument: string
-        The instrument which the data in the FITS file came from
-
-    Returns
-    -------
-    pixelscale: float
-        The native pixelscale of the given instrument.
-    """
-
-    pixelscale = 0
-    if (instrument == 'IRAC'):
-        pixelscale = abs(header['PXSCAL1'])
-    elif (instrument == 'MIPS'):
-        pixelscale = header['PLTSCALE']
-    elif (instrument == 'SPIRE'):
-        pixelscale = u.deg.to(u.arcsec, abs(header['CDELT2']))
-    else:
-        if ('CDELT2' in header):
-            pixelscale = u.deg.to(u.arcsec, abs(header['CDELT2']))
-
-    if (pixelscale == 0):
-        print("The native pixelscale is 0, so something may have gone wrong here.")
-
-    return pixelscale
-
-
 # NOTETOSELF: if the instrument is not found, the user can provide the value themselves
 def get_conversion_factor(header, instrument):
     """
@@ -311,9 +273,9 @@ def get_conversion_factor(header, instrument):
     # Give a default value that can't possibly be valid; if this is still the value
     # after running through all of the possible cases, then an error has occurred.
     conversion_factor = 0
+    pixelscale = abs(header['CDELT1'])
 
     if (instrument == 'IRAC'):
-        pixelscale = get_native_pixelscale(header, 'IRAC')
         #print("Pixel scale: " + `pixelscale`)
         # NOTEOTSELF: This is a hardcoded value from what Sophia gave me.
         # I would like to see if we could also obtain this from units.
@@ -321,7 +283,6 @@ def get_conversion_factor(header, instrument):
         conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
 
     elif (instrument == 'MIPS'):
-        pixelscale = get_native_pixelscale(header, 'MIPS')
         #print("Pixel scale: " + `pixelscale`)
         conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
 
@@ -360,7 +321,6 @@ def get_conversion_factor(header, instrument):
         conversion_factor = 1;
 
     elif (instrument == 'SPIRE'):
-        pixelscale = get_native_pixelscale(header, 'SPIRE')
         wavelength = header['WAVELNTH']
         if (wavelength == 250):
             conversion_factor = (pixelscale**2) / S250_BEAM_AREA
@@ -544,7 +504,7 @@ def register_images(images_with_headers):
 
     for i in range(0, len(images_with_headers)):
 
-        native_pixelscale = get_native_pixelscale(images_with_headers[i][1], images_with_headers[i][1]['INSTRUME'])
+        native_pixelscale = abs(images_with_headers[i][1]['CDELT1'])
         print("Native pixel scale: " + `native_pixelscale`)
         print("Instrument: " + `images_with_headers[i][1]['INSTRUME']`)
         print("BUNIT: " + `images_with_headers[i][1]['BUNIT']`)
@@ -667,7 +627,7 @@ def convolve_images(images_with_headers):
 
     for i in range(0, len(images_with_headers)):
 
-        native_pixelscale = get_native_pixelscale(images_with_headers[i][1], images_with_headers[i][1]['INSTRUME'])
+        native_pixelscale = abs(images_with_headers[i][1]['CDELT1'])
         sigma_input = fwhm_input / (2* math.sqrt(2*math.log (2) ) * native_pixelscale)
         print("Native pixel scale: " + `native_pixelscale`)
         print("Instrument: " + `images_with_headers[i][1]['INSTRUME']`)
