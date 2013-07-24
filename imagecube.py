@@ -48,7 +48,7 @@ import astropy.utils.console as console
 
 NYQUIST_SAMPLING_RATE = 3.3
 """
-Constant: NYQUIST_SAMPLING_RATE
+Code constant: NYQUIST_SAMPLING_RATE
 
 Some explanation of where this value comes from is needed.
 
@@ -56,31 +56,36 @@ Some explanation of where this value comes from is needed.
 
 MJY_PER_SR_TO_JY_PER_PIXEL = 2.3504 * 10**(-5)
 """
-Constant: MJY_PER_SR_TO_JY_PER_PIXEL
+Code constant: MJY_PER_SR_TO_JY_PER_PIXEL
 
-Factor for converting from MJy/sr to Jy/pixel
+Factor for converting Spitzer (MIPS and IRAC)  units from MJy/sr to
+Jy/(pixel area)
 
 """
 
 FUV_LAMBDA_CON = 1.40 * 10**(-15)
 """
-Constant: FUV_LAMBDA_CON
+Code constant: FUV_LAMBDA_CON
 
-Some explanation of where this value comes from.
+Calibration from CPS to Flux in [erg sec-1 cm-2 Å-1], as given in GALEX
+for the FUV filter.
+http://galexgi.gsfc.nasa.gov/docs/galex/FAQ/counts_background.html
 
 """
 
 NUV_LAMBDA_CON = 2.06 * 10**(-16)
 """
-Constant: NUV_LAMBDA_CON
+Code constant: NUV_LAMBDA_CON
 
-Some explanation of where this value comes from.
+Calibration from CPS to Flux in [erg sec-1 cm-2 Å-1], as given in GALEX
+for the NUV filter.
+http://galexgi.gsfc.nasa.gov/docs/galex/FAQ/counts_background.html
 
 """
 
 FVEGA_J = 1594
 """
-Constant: FVEGA_J
+Code constant: FVEGA_J
 
 Flux value (in Jy) of Vega for the 2MASS J filter.
 
@@ -88,7 +93,7 @@ Flux value (in Jy) of Vega for the 2MASS J filter.
 
 FVEGA_H = 1024
 """
-Constant: FVEGA_H
+Code constant: FVEGA_H
 
 Flux value (in Jy) of Vega for the 2MASS H filter.
 
@@ -96,7 +101,7 @@ Flux value (in Jy) of Vega for the 2MASS H filter.
 
 FVEGA_KS = 666.7
 """
-Constant: FVEGA_KS
+Code constant: FVEGA_KS
 
 Flux value (in Jy) of Vega for the 2MASS Ks filter.
 
@@ -104,39 +109,40 @@ Flux value (in Jy) of Vega for the 2MASS Ks filter.
 
 WAVELENGTH_2MASS_J = 1.2409
 """
-Constant: WAVELENGTH_2MASS_J
+Code constant: WAVELENGTH_2MASS_J
 
-Wavelength for the 2MASS J filter
+Representative wavelength (in micron) for the 2MASS J filter
 
 """
 
 WAVELENGTH_2MASS_H = 1.6514
 """
-Constant: WAVELENGTH_2MASS_H
+Code constant: WAVELENGTH_2MASS_H
 
-Wavelength for the 2MASS H filter
+Representative wavelength (in micron) for the 2MASS H filter
 
 """
 
 WAVELENGTH_2MASS_KS = 2.1656
 """
-Constant: WAVELENGTH_2MASS_KS
+Code constant: WAVELENGTH_2MASS_KS
 
-Wavelength for the 2MASS Ks filter
+Representative wavelength (in micron) for the 2MASS Ks filter
 
 """
 
-JY_CONVERSION = 10**23
+#JY_CONVERSION = 10**23
+JY_CONVERSION = u.Jy.to(u.erg / u.cm**2 / u.s / u.Hz, 1., equivalencies=u.spectral_density(u.AA, 1500))  ** -1
 """
-Constant: JY_CONVERSION
+Code constant: JY_CONVERSION
 
-This is set to be replaced by Astropy units.
+This is to convert the GALEX flux units given in erg/s/cm^2/Hz to Jy.
 
 """
 
 S250_BEAM_AREA = 423
 """
-Constant: S250_BEAM_AREA
+Code constant: S250_BEAM_AREA
 
 Beam area (arcsec^2) for SPIRE 250 band.
 From SPIRE Observer's Manual v2.4.
@@ -144,7 +150,7 @@ From SPIRE Observer's Manual v2.4.
 """
 S350_BEAM_AREA = 751
 """
-Constant: S250_BEAM_AREA
+Code constant: S250_BEAM_AREA
 
 Beam area (arcsec^2) for SPIRE 350 band.
 From SPIRE Observer's Manual v2.4.
@@ -152,7 +158,7 @@ From SPIRE Observer's Manual v2.4.
 """
 S500_BEAM_AREA = 1587
 """
-Constant: S500_BEAM_AREA
+Code constant: S500_BEAM_AREA
 
 Beam area (arcsec^2) for SPIRE 500 band.
 From SPIRE Observer's Manual v2.4.
@@ -186,23 +192,43 @@ def print_usage():
     """
 
     print("""
-Usage: """ + sys.argv[0] + """ --directory <directory> --angular_physical_size <angular_physical_size> [--conversion_factors] [--conversion] [--registration] [--convolution] [--resampling] [--seds] [--cleanup] [--ra <ra>] [--dec <dec>] [--help]
+Usage: """ + sys.argv[0] + """ --dir <directory> --ang_size <angular_size> [--flux_conv] [--im_reg] [--im_ref <filename>] [--im_conv] [--fwhm <fwhm value>] [--im_regrid] [--seds] [--cleanup] [--help]  
 
-directory: the path to the directory containing FITS files to be processed
+dir: the path to the directory containing the <input FITS files> to be 
+processed
 
-angular_physical_size: the physical size to map to the object
+ang_size: the angular size of the object in arcsec
 
-conversion, registration, convolution, resampling, seds: each of these 
-parameters will enable the corresponding processing step to be performed. 
-Default behaviour is to do none of these steps.
+flux_conv: if flux units are not in Jy/pixel, this task will perform unit
+conversion to Jy/pixel.
+NOTE: If data are not GALEX, 2MASS, MIPS, IRAC, PACS, SPIRE, then the user
+should provide flux unit conversion factors to go from the image's native
+flux units to Jy/pixel. This information should be recorded in the header
+keyword FLUXCONV for each input image.
 
-ra, dec: the desired RA and Dec, respectively, of the output images.
+im_reg: it performs the registration of the input images to the reference
+image. The user should provide the reference image with the im_ref 
+parameter.
 
-reference_image: information from the header of this image will be used in
-various processing steps.
+im_ref: this is a reference image the user provides. In the header, the following keywords should be present: CRVAL1, CRVAL2, which give the RA and DEC to which the images will be registered using im_reg.
 
-convolution_reference_image: information from the header of this image will be
-used in the convolution step.
+im_conv: it performs convolution to a common resolution, either Gaussian
+or using a PSF kernel. The user provides the angular
+resolution with the fwhm parameter. If the PSF kernel is chosen, the user provides
+the PSF kernels with the following naming convention:
+
+    <input FITS files>_kernel.fits
+
+For example: an input image named SI1.fits will have a corresponding
+kernel file named SI1_kernel.fits
+
+fwhm: the user provides the angular resolution in arcsec to which all images will be convolved with im_conv
+
+im_regrid: it performs regridding of the convolved images to a common
+pixel scale. The pixel scale is defined to be the fwhm divided by """ + NYQUIST_SAMPLING_RATE + """.
+
+seds: it produces the spectral energy distribution on a pixel-by-pixel
+basis, on the regridded images.
 
 cleanup: if this parameter is present, then output files from previous 
 executions of the script are removed and no processing is done.
@@ -210,11 +236,12 @@ executions of the script are removed and no processing is done.
 help: if this parameter is present, this message will be displayed and no 
 processing will be done.
 
-NOTE: the following keywords must be present for optimal image processing:
-    KEYWORD1
-    KEYWORD2
-    KEYWORD3
-    KEYWORD4
+NOTE: the following keywords must be present, along with a comment containing the units (where applicable), for optimal image processing:
+    CRVAL1: it contains the RA (in degrees) to which the images will be registered by im_reg
+    CRVAL2: it contains the DEC (in degrees) to which the images will be registered by im_reg
+    WAVELNTH: the representative wavelength (in micrometres) of the filter bandpass
+    CDELT1: the pixelscale (in degrees) along the x-axis
+    CDELT2: the pixelscale (in degrees) along the y-axis
 If any of these keywords are missing, imagecube will attempt to determine them 
 as best as possible. The calculated values will be present in the headers of 
 the output images; if they look wrong, please check the headers of your input 
@@ -564,7 +591,7 @@ def parse_command_line():
     global convolution_reference_image
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_physical_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds", "cleanup", "ra=", "dec=", "reference_image=", "convolution_reference_image=", "help"])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds", "cleanup", "ra=", "dec=", "reference_image=", "convolution_reference_image=", "help"])
     except getopt.GetoptError:
         print("An error occurred. Check your parameters and try again.")
         sys.exit(2)
@@ -572,7 +599,7 @@ def parse_command_line():
         if opt in ("--help"):
             print_usage()
             sys.exit()
-        if opt in ("--angular_physical_size"):
+        if opt in ("--angular_size"):
             phys_size = float(arg)
         if opt in ("--directory"):
             directory = arg
