@@ -248,37 +248,6 @@ the output images; if they look wrong, please check the headers of your input
 images and make sure that these values are present.
     """)
 
-# NOTETOSELF: Other acceptable units: mm, m, Hz
-def wavelength_to_microns(wavelength, unit):
-    """
-    Converts the input wavelength units into microns so that we only have
-    to deal with a single unit.
-
-    Parameters
-    ----------
-    wavelength:
-        The wavelength.
-    unit:
-        The original unit of the wavelength.
-
-    Returns
-    -------
-    return_value: float
-        The wavelength in microns.
-    """
-
-    if (unit in u.micron.names or unit in u.um.names):
-        return_value = float(wavelength)
-    elif (unit in u.angstrom.names):
-        return_value = u.angstrom.to(u.micron, float(wavelength))
-    # This is a placeholder default value for now - it is not intended to be used
-    # for real!
-    # NOTETOSELF: That means that some proper error checking needs to be done here.
-    else:
-        return_value = 1
-
-    return return_value
-
 # NOTETOSELF: other keywords may be acceptable
 # NOTETOSELF: pass the filenames to this function as well so we know which file we are
 # on in case of problems.
@@ -1224,14 +1193,12 @@ if __name__ == '__main__':
         # later on
         filename = os.path.splitext(hdulist.filename())[0]
         hdulist.close()
-        #wavelength = header['WAVELENG']
-        wavelength, wavelength_units = get_wavelength(header)
+        wavelength = header['WAVELNTH']
         #wavelength_units = header.comments['WAVELENG']
-        wavelength_microns = wavelength_to_microns(wavelength, wavelength_units)
         #print("Wavelength " + `wavelength_microns` + "; Sample image value: " + `image[30][30]`)
         # NOTETOSELF: don't overwrite the header value here. Either create a new keyword,
         # say, WLMICRON, or include the original value in a comment.
-        header['WAVELENG'] = (wavelength_microns, 'micron')
+        header['WAVELNTH'] = (wavelength, 'micron')
         image_data.append(image)
         headers.append(header)
         filenames.append(filename)
