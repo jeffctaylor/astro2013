@@ -165,27 +165,6 @@ From SPIRE Observer's Manual v2.4.
 
 """
 
-def is_number(s):
-    """
-    Checks whether the input value is a number or not.
-
-    Parameters
-    ----------
-    s
-        The value to check
-
-    Returns
-    -------
-    Boolean
-        True if s is a number, False otherwise
-    """
-
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
 def print_usage():
     """
     Displays usage information in case of a command line error.
