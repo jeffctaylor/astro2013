@@ -711,18 +711,9 @@ def resample_images(images_with_headers):
     parameter2 = parameter1
     artdata.mkpattern(input="grid_final_resample.fits", output="grid_final_resample.fits", pattern="constant", pixtype="double", ndim=2, ncols=parameter1, nlines=parameter2)
 
-    if (ra_input != ''):
-        lngref_input = ra_input
-    else:
-        lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
-    if (dec_input != ''):
-        latref_input = dec_input
-    else:
-        latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
-    
-    # Then, we tag the desired WCS in this fake image:
-    # unlearn some iraf tasks
-    iraf.unlearn('ccsetwcs')
+    hdr = fits.getheader(main_reference_image, 0)
+    lngref_input = hdr['CRVAL1']
+    latref_input = hdr['CRVAL2']
 
     # tag the desired WCS in the fake image "apixel.fits"
     # NOTETOSELF: in the code Sophia gave me, lngunit was given as "hours", but I have
