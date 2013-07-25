@@ -273,7 +273,8 @@ def get_conversion_factor(header, instrument):
     # Give a default value that can't possibly be valid; if this is still the value
     # after running through all of the possible cases, then an error has occurred.
     conversion_factor = 0
-    pixelscale = abs(float(header['CDELT1']))
+    pixelscale = u.deg.to(u.arcsec, abs(float(header['CDELT1'])))
+
 
     if (instrument == 'IRAC'):
         #print("Pixel scale: " + `pixelscale`)
@@ -505,7 +506,7 @@ def register_images(images_with_headers):
 
     for i in range(0, len(images_with_headers)):
 
-        native_pixelscale = abs(images_with_headers[i][1]['CDELT1'])
+        native_pixelscale = u.deg.to(u.arcsec, abs(float(images_with_headers[i][1]['CDELT1'])))
         print("Native pixel scale: " + `native_pixelscale`)
         print("Instrument: " + `images_with_headers[i][1]['INSTRUME']`)
         print("BUNIT: " + `images_with_headers[i][1]['BUNIT']`)
@@ -528,7 +529,7 @@ def register_images(images_with_headers):
         iraf.unlearn('mkpattern')
 
         # create an artificial image to which we will register the FITS image.
-        print('native_pixelxcale: ' + `native_pixelscale`)
+        print('native_pixelscale: ' + `native_pixelscale`)
         print(`phys_size/native_pixelscale`)
         artdata.mkpattern(input=artificial_filename, output=artificial_filename, pattern="constant", pixtype="double", ndim=2, ncols=phys_size/native_pixelscale, nlines=phys_size/native_pixelscale)
         #note that in the exact above line, the "ncols" and "nlines" should be wisely chosen, depending on the input images - they provide the pixel-grid 
@@ -630,7 +631,7 @@ def convolve_images(images_with_headers):
 
     for i in range(0, len(images_with_headers)):
 
-        native_pixelscale = abs(images_with_headers[i][1]['CDELT1'])
+        native_pixelscale = u.deg.to(u.arcsec, abs(float(images_with_headers[i][1]['CDELT1'])))
         sigma_input = fwhm_input / (2* math.sqrt(2*math.log (2) ) * native_pixelscale)
         print("Native pixel scale: " + `native_pixelscale`)
         print("Instrument: " + `images_with_headers[i][1]['INSTRUME']`)
