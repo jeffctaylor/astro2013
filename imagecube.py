@@ -487,7 +487,7 @@ def register_images(images_with_headers):
         original_filename = os.path.basename(images_with_headers[i][2])
         original_directory = os.path.dirname(images_with_headers[i][2])
         new_directory = original_directory + "/registered/"
-        artificial_filename = new_directory + original_filename + "_pixelgrid.fits"
+        artificial_filename = new_directory + original_filename + "_pixelgrid"
         registered_filename = new_directory + original_filename  + "_registered.fits"
         input_directory = original_directory + "/converted/"
         input_filename = input_directory + original_filename  + "_converted.fits"
@@ -519,7 +519,9 @@ def register_images(images_with_headers):
         #note that "lngref" and "latref" can be grabbed by the fits header, it is actually the center of the target (e.g. ngc1569)
         #note that we should make sure that the coordinate system is in coosyst="j2000" by checking the header info, otherwise we need to adjust that
 
+        print("RA/DEC: " + `lngref_input` + ' ' + `latref_input`)
         montage.commands.mHdr(`lngref_input` + ' ' + `latref_input`, width_and_height, artificial_filename, system='eq', equinox=2000.0, height=width_and_height, pix_size=native_pixelscale, rotation=0.)
+        #montage.commands.mHdr('ngc1569', width_and_height, artificial_filename, system='eq', equinox=2000.0, height=width_and_height, pix_size=native_pixelscale, rotation=0.)
 
         # Then, register the fits file of interest to the WCS of the fake fits file
         # unlearn some iraf tasks
@@ -701,24 +703,33 @@ def resample_images(images_with_headers):
     # First we create an artificial fits image, 
     # The difference with the registration step is that the artificial image is now created only once, and it is common for all the input_images_convolved (or imput_images_gaussian_convolved)
     # unlearn some iraf tasks
-    iraf.unlearn('mkpattern')
+    #iraf.unlearn('mkpattern')
     
     # create a fake image "grid_final_resample.fits", to which we will register all fits images
     print("fwhm: " + `fwhm_input`)
     # parameter1 & parameter2 depend on the "fwhm" of the convolution step, and following the Nyquist sampling rate. 
-    parameter1 = phys_size / (fwhm_input / NYQUIST_SAMPLING_RATE) 
-    print("ncols, nlines: " + `parameter1`)
-    parameter2 = parameter1
-    artdata.mkpattern(input="grid_final_resample.fits", output="grid_final_resample.fits", pattern="constant", pixtype="double", ndim=2, ncols=parameter1, nlines=parameter2)
+    width_input = phys_size / (fwhm_input / NYQUIST_SAMPLING_RATE) 
+    print("ncols, nlines: " + `width_input`)
+    height_input = width_input
+    #artdata.mkpattern(input="grid_final_resample.fits", output="grid_final_resample.fits", pattern="constant", pixtype="double", ndim=2, ncols=parameter1, nlines=parameter2)
 
     hdr = fits.getheader(main_reference_image, 0)
     lngref_input = hdr['CRVAL1']
     latref_input = hdr['CRVAL2']
 
+    montage.commands.mHdr(`lngref_input` + ' ' + `latref_input`, width_input, 'grid_final_resample.fits', system='eq', equinox=2000.0, height=height_input, pix_size=fwhm_input/NYQUIST_SAMPLING_RATE, rotation=0.)
+
+        # Then, register the fits file of interest to the WCS of the fake fits file
+        # unlearn some iraf tasks
+        #iraf.unlearn('wregister')
+
+        # register the science fits image
+        #iraf.wregister(input=input_filename, reference=artificial_filename, output=registered_filename, fluxconserve="no")
+
     # tag the desired WCS in the fake image "apixel.fits"
     # NOTETOSELF: in the code Sophia gave me, lngunit was given as "hours", but I have
     # changed it to "degrees".
-    iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=parameter1/2, yref=parameter2/2, xmag=fwhm_input/NYQUIST_SAMPLING_RATE, ymag=fwhm_input/NYQUIST_SAMPLING_RATE, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
+    #iraf.ccsetwcs(images="grid_final_resample.fits", database="", solution="", xref=parameter1/2, yref=parameter2/2, xmag=fwhm_input/NYQUIST_SAMPLING_RATE, ymag=fwhm_input/NYQUIST_SAMPLING_RATE, xrotati=0.,yrotati=0.,lngref=lngref_input, latref=latref_input, lngunit="degrees", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
 
     for i in range(0, len(images_with_headers)):
         original_filename = os.path.basename(images_with_headers[i][2])
@@ -732,12 +743,14 @@ def resample_images(images_with_headers):
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
+        montage.wrappers.reproject(input_filename, resampled_filename, header='grid_final_resample.fits')  
+
         # Then, register the fits file of interest to the WCS of the fake fits file
         # unlearn some iraf tasks
-        iraf.unlearn('wregister')
+        #iraf.unlearn('wregister')
 
         # register the science fits image
-        iraf.wregister(input=input_filename, reference="grid_final_resample.fits", output=resampled_filename, fluxconserve="yes")
+        #iraf.wregister(input=input_filename, reference="grid_final_resample.fits", output=resampled_filename, fluxconserve="yes")
 
     create_data_cube(images_with_headers)
 
