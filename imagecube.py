@@ -249,6 +249,63 @@ the output images; if they look wrong, please check the headers of your input
 images and make sure that these values are present.
     """)
 
+def parse_command_line():
+    """
+    Parses the command line to obtain parameters.
+
+    """
+
+    global phys_size
+    global directory
+    global do_conversion
+    global do_registration
+    global do_convolution
+    global do_resampling
+    global do_seds
+    global do_cleanup
+    global ra_input
+    global dec_input
+    global main_reference_image
+    global convolution_reference_image
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "", ["dir=", "ang_size=", "flux_conv", "im_conv", "im_reg", "im_ref=", "im_conv", "fwhm=", "im_regrid", "seds", "cleanup", "help"])
+    except getopt.GetoptError:
+        print("An error occurred. Check your parameters and try again.")
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt in ("--help"):
+            print_usage()
+            sys.exit()
+        elif opt in ("--ang_size"):
+            phys_size = float(arg)
+        elif opt in ("--directory"):
+            directory = arg
+            if (not os.path.isdir(directory)):
+                print("Error: The directory cannot be found: " + directory)
+                sys.exit()
+        elif opt in ("--flux_conv"):
+            do_conversion = True
+        elif opt in ("--im_reg"):
+            do_registration = True
+        elif opt in ("--im_conv"):
+            do_convolution = True
+        elif opt in ("--im_regrid"):
+            do_resampling = True
+        elif opt in ("--seds"):
+            do_seds = True
+        elif opt in ("--cleanup"):
+            do_cleanup = True
+        elif opt in ("--im_ref"):
+            main_reference_image = arg
+
+    if (main_reference_image != ''):
+        try:
+            with open(directory + '/' + main_reference_image): pass
+        except IOError:
+            print("The file " + main_reference_image + " could not be found in the directory " + directory)
+            sys.exit()
+
 # NOTETOSELF: if the instrument is not found, the user can provide the value themselves
 def get_conversion_factor(header, instrument):
     """
@@ -331,79 +388,6 @@ def get_conversion_factor(header, instrument):
             conversion_factor = (pixelscale**2) / S500_BEAM_AREA
     
     return conversion_factor
-
-def parse_command_line():
-    """
-    Parses the command line to obtain parameters.
-
-    """
-
-    global phys_size
-    global directory
-    global conversion_factors
-    global do_conversion
-    global do_registration
-    global do_convolution
-    global do_resampling
-    global do_seds
-    global do_cleanup
-    global ra_input
-    global dec_input
-    global main_reference_image
-    global convolution_reference_image
-
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["directory=", "angular_size=", "conversion_factors", "conversion", "registration", "convolution", "resampling", "seds", "cleanup", "ra=", "dec=", "reference_image=", "convolution_reference_image=", "help"])
-    except getopt.GetoptError:
-        print("An error occurred. Check your parameters and try again.")
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt in ("--help"):
-            print_usage()
-            sys.exit()
-        if opt in ("--angular_size"):
-            phys_size = float(arg)
-        if opt in ("--directory"):
-            directory = arg
-            if (not os.path.isdir(directory)):
-                print("Error: The directory cannot be found: " + directory)
-                sys.exit()
-        if opt in ("--conversion_factors"):
-            conversion_factors = True
-        if opt in ("--conversion"):
-            do_conversion = True
-        if opt in ("--registration"):
-            do_registration = True
-        if opt in ("--convolution"):
-            do_convolution = True
-        if opt in ("--resampling"):
-            do_resampling = True
-        if opt in ("--seds"):
-            do_seds = True
-        if opt in ("--cleanup"):
-            do_cleanup = True
-        if opt in ("--ra"):
-            ra_input = float(arg)
-        if opt in ("--dec"):
-            dec_input = float(arg)
-        if opt in ("--reference_image"):
-            main_reference_image = arg
-        if opt in ("--convolution_reference_image"):
-            convolution_reference_image = arg
-
-    if (main_reference_image != ''):
-        try:
-            with open(directory + '/' + main_reference_image): pass
-        except IOError:
-            print("The file " + main_reference_image + " could not be found in the directory " + directory)
-            sys.exit()
-
-    if (convolution_reference_image != ''):
-        try:
-            with open(directory + '/' + convolution_reference_image): pass
-        except IOError:
-            print("The file " + convolution_reference_image + " could not be found in the directory " + directory)
-            sys.exit()
 
 def convert_images(images_with_headers):
     """
@@ -923,8 +907,6 @@ if __name__ == '__main__':
     ra_input = ''
     dec_input = ''
     main_reference_image = ''
-    convolution_reference_image = ''
-    conversion_factors = False
     do_conversion = False
     do_registration = False
     do_convolution = False
@@ -981,9 +963,6 @@ if __name__ == '__main__':
     # Sort the lists by their WAVELNTH value
     images_with_headers_unsorted = zip(image_data, headers, filenames)
     images_with_headers = sorted(images_with_headers_unsorted, key=lambda header: header[1]['WAVELNTH'])
-
-    #if (conversion_factors):
-        #output_conversion_factors(images_with_headers)
 
     if (do_conversion):
         convert_images(images_with_headers)
