@@ -273,7 +273,7 @@ def get_conversion_factor(header, instrument):
     # Give a default value that can't possibly be valid; if this is still the value
     # after running through all of the possible cases, then an error has occurred.
     conversion_factor = 0
-    pixelscale = abs(header['CDELT1'])
+    pixelscale = abs(float(header['CDELT1']))
 
     if (instrument == 'IRAC'):
         #print("Pixel scale: " + `pixelscale`)
@@ -287,7 +287,7 @@ def get_conversion_factor(header, instrument):
         conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
 
     elif (instrument == 'GALEX'):
-        wavelength = u.um.to(u.angstrom, header['WAVELNTH'])
+        wavelength = u.um.to(u.angstrom, float(header['WAVELNTH']))
         #print("Speed of light: " + `constants.c.to('um/s').value`)
         f_lambda_con = 0
         # I am using a < comparison here to account for the possibility that the given
@@ -421,6 +421,7 @@ def convert_images(images_with_headers):
     print("Converting images")
     for i in range(0, len(images_with_headers)):
         instrument = images_with_headers[i][1]['INSTRUME']
+        print('FILE: ' + images_with_headers[i][2])
         conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
 
         # Some manipulation of filenames and directories
@@ -527,6 +528,8 @@ def register_images(images_with_headers):
         iraf.unlearn('mkpattern')
 
         # create an artificial image to which we will register the FITS image.
+        print('native_pixelxcale: ' + `native_pixelscale`)
+        print(`phys_size/native_pixelscale`)
         artdata.mkpattern(input=artificial_filename, output=artificial_filename, pattern="constant", pixtype="double", ndim=2, ncols=phys_size/native_pixelscale, nlines=phys_size/native_pixelscale)
         #note that in the exact above line, the "ncols" and "nlines" should be wisely chosen, depending on the input images - they provide the pixel-grid 
         #for each input fits image, we will create the corresponding artificial one - therefore we can tune these values such that we cover, for instance, XXarcsecs of the target - so the best is that user provides us with such a value
