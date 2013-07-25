@@ -225,7 +225,7 @@ kernel file named SI1_kernel.fits
 fwhm: the user provides the angular resolution in arcsec to which all images will be convolved with im_conv
 
 im_regrid: it performs regridding of the convolved images to a common
-pixel scale. The pixel scale is defined to be the fwhm divided by """ + NYQUIST_SAMPLING_RATE + """.
+pixel scale. The pixel scale is defined to be the fwhm divided by """ + `NYQUIST_SAMPLING_RATE` + """.
 
 seds: it produces the spectral energy distribution on a pixel-by-pixel
 basis, on the regridded images.
