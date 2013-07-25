@@ -246,6 +246,7 @@ def parse_command_line():
     global dec_input
     global main_reference_image
     global convolution_reference_image
+    global fwhm_input
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "", ["dir=", "ang_size=", "flux_conv", "im_conv", "im_reg", "im_ref=", "im_conv", "fwhm=", "im_regrid", "seds", "cleanup", "help"])
@@ -277,6 +278,8 @@ def parse_command_line():
             do_cleanup = True
         elif opt in ("--im_ref"):
             main_reference_image = arg
+        elif opt in ("--fwhm"):
+            fwhm_input = float(arg)
 
     if (main_reference_image != ''):
         try:
@@ -589,7 +592,6 @@ def convolve_images(images_with_headers):
     """
 
     print("Convolving images")
-    fwhm_input = get_fwhm_value(images_with_headers)
     print("fwhm_input = " + `fwhm_input`)
 
     for i in range(0, len(images_with_headers)):
@@ -692,7 +694,6 @@ def resample_images(images_with_headers):
     iraf.unlearn('mkpattern')
     
     # create a fake image "grid_final_resample.fits", to which we will register all fits images
-    fwhm_input = get_fwhm_value(images_with_headers)
     print("fwhm: " + `fwhm_input`)
     # parameter1 & parameter2 depend on the "fwhm" of the convolution step, and following the Nyquist sampling rate. 
     parameter1 = phys_size / (fwhm_input / NYQUIST_SAMPLING_RATE) 
@@ -886,6 +887,7 @@ if __name__ == '__main__':
     ra_input = ''
     dec_input = ''
     main_reference_image = ''
+    fwhm_input = ''
     do_conversion = False
     do_registration = False
     do_convolution = False
