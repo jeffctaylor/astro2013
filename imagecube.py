@@ -242,10 +242,7 @@ def parse_command_line():
     global do_resampling
     global do_seds
     global do_cleanup
-    global ra_input
-    global dec_input
     global main_reference_image
-    global convolution_reference_image
     global fwhm_input
 
     try:
@@ -283,7 +280,7 @@ def parse_command_line():
 
     if (main_reference_image != ''):
         try:
-            with open(directory + '/' + main_reference_image): pass
+            with open(main_reference_image): pass
         except IOError:
             print("The file " + main_reference_image + " could not be found in the directory " + directory)
             sys.exit()
@@ -460,15 +457,19 @@ def register_images(images_with_headers):
     print("Registering images")
     print("phys_size: " + `phys_size`)
 
-    if (ra_input != ''):
-        lngref_input = ra_input
-    else:
-        lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
+    hdr = fits.getheader(main_reference_image, 0)
+    lngref_input = hdr['CRVAL1']
+    latref_input = hdr['CRVAL2']
 
-    if (dec_input != ''):
-        latref_input = dec_input
-    else:
-        latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
+    #if (ra_input != ''):
+        #lngref_input = ra_input
+    #else:
+        #lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
+
+    #if (dec_input != ''):
+        #latref_input = dec_input
+    #else:
+        #latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
 
     for i in range(0, len(images_with_headers)):
 
@@ -884,8 +885,6 @@ def cleanup_output_files():
 if __name__ == '__main__':
     phys_size = ''
     directory = ''
-    ra_input = ''
-    dec_input = ''
     main_reference_image = ''
     fwhm_input = ''
     do_conversion = False
