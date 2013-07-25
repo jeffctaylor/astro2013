@@ -358,7 +358,9 @@ def get_conversion_factor(header, instrument):
         conversion_factor = 1;
 
     elif (instrument == 'SPIRE'):
-        wavelength = header['WAVELNTH']
+        print("SPIRE: " + header['WAVELNTH'])
+        print("pixelscale: " + `pixelscale`)
+        wavelength = float(header['WAVELNTH'])
         if (wavelength == 250):
             conversion_factor = (pixelscale**2) / S250_BEAM_AREA
         elif (wavelength == 350):
@@ -366,6 +368,7 @@ def get_conversion_factor(header, instrument):
         elif (wavelength == 500):
             conversion_factor = (pixelscale**2) / S500_BEAM_AREA
     
+    print("Return: " + `conversion_factor`)
     return conversion_factor
 
 def convert_images(images_with_headers):
