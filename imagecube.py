@@ -407,7 +407,7 @@ def register_images(images_with_headers):
         original_filename = os.path.basename(images_with_headers[i][2])
         original_directory = os.path.dirname(images_with_headers[i][2])
         new_directory = original_directory + "/registered/"
-        artificial_filename = new_directory + original_filename + "_pixelgrid"
+        artificial_filename = new_directory + original_filename + "_pixelgrid_header"
         registered_filename = new_directory + original_filename  + "_registered.fits"
         input_directory = original_directory + "/converted/"
         input_filename = input_directory + original_filename  + "_converted.fits"
@@ -576,7 +576,7 @@ def resample_images(images_with_headers):
     lngref_input = hdr['CRVAL1']
     latref_input = hdr['CRVAL2']
 
-    montage.commands.mHdr(`lngref_input` + ' ' + `latref_input`, width_input, 'grid_final_resample.fits', system='eq', equinox=2000.0, height=height_input, pix_size=fwhm_input/NYQUIST_SAMPLING_RATE, rotation=0.)
+    montage.commands.mHdr(`lngref_input` + ' ' + `latref_input`, width_input, 'grid_final_resample_header', system='eq', equinox=2000.0, height=height_input, pix_size=fwhm_input/NYQUIST_SAMPLING_RATE, rotation=0.)
 
     for i in range(0, len(images_with_headers)):
         original_filename = os.path.basename(images_with_headers[i][2])
@@ -588,7 +588,7 @@ def resample_images(images_with_headers):
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
-        montage.wrappers.reproject(input_filename, resampled_filename, header='grid_final_resample.fits')  
+        montage.wrappers.reproject(input_filename, resampled_filename, header='grid_final_resample_header')  
 
     create_data_cube(images_with_headers)
 
