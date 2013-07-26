@@ -368,8 +368,11 @@ def convert_images(images_with_headers):
     """
 
     for i in range(0, len(images_with_headers)):
-        instrument = images_with_headers[i][1]['INSTRUME']
-        conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
+        if ('FLSCALE' in images_with_headers[i][1]):
+            conversion_factor = float(images_with_headers[i][1]['FLSCALE'])
+        else:
+            instrument = images_with_headers[i][1]['INSTRUME']
+            conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
 
         # Some manipulation of filenames and directories
         original_filename = os.path.basename(images_with_headers[i][2])
@@ -419,7 +422,7 @@ def register_images(images_with_headers):
             os.makedirs(new_directory)
 
         montage.commands.mHdr(`lngref_input` + ' ' + `latref_input`, width_and_height, artificial_filename, system='eq', equinox=2000.0, height=width_and_height, pix_size=native_pixelscale, rotation=0.)
-        montage.wrappers.reproject(input_filename, registered_filename, header=artificial_filename)  
+        montage.wrappers.reproject(input_filename, registered_filename, header=artificial_filename, exact_size=True)  
 
 # NOTETOSELF: This function requires a PSF kernel. Not sure where it should go, but
 # here it is just in case we still need it. It is NOT ready to be run yet.
