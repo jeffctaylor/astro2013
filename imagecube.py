@@ -46,12 +46,12 @@ Some explanation of where this value comes from is needed.
 
 """
 
-MJY_PER_SR_TO_JY_PER_PIXEL = 2.3504 * 10**(-5)
+MJY_PER_SR_TO_JY_PER_ARCSEC2 = 2.3504 * 10**(-5)
 """
-Code constant: MJY_PER_SR_TO_JY_PER_PIXEL
+Code constant: MJY_PER_SR_TO_JY_PER_ARCSEC2
 
 Factor for converting Spitzer (MIPS and IRAC)  units from MJy/sr to
-Jy/(pixel area)
+Jy/(arcsec^2)
 
 """
 
@@ -163,7 +163,7 @@ def print_usage():
     """
 
     print("""
-Usage: """ + sys.argv[0] + """ --dir <directory> --ang_size <angular_size> [--flux_conv] [--im_reg] [--im_ref <filename>] [--im_conv] [--fwhm <fwhm value>] [--im_regrid] [--seds] [--cleanup] [--help]  
+Usage: """ + sys.argv[0] + """ --dir <directory> --ang_size <angular_size> [--flux_conv] [--im_reg] [--im_ref <filename>] [--im_conv] [--fwhm <fwhm value>] [--kernels] [--im_regrid] [--im_pixsc <number in arcsec>] [--seds] [--cleanup] [--help]  
 
 dir: the path to the directory containing the <input FITS files> to be 
 processed
@@ -193,10 +193,14 @@ the PSF kernels with the following naming convention:
 For example: an input image named SI1.fits will have a corresponding
 kernel file named SI1_kernel.fits
 
-fwhm: the user provides the angular resolution in arcsec to which all images will be convolved with im_conv
+fwhm: the user provides the angular resolution in arcsec to which all images will be convolved with im_conv, if the Gaussian convolution is chosen, or if not all the input images have a corresponding kernel.
+
+kernels: the user provides kernel FITS images for each of the input images. If all input images do not have a corresponding kernel image, then the Gaussian convolution will be performed for these images.
 
 im_regrid: it performs regridding of the convolved images to a common
-pixel scale. The pixel scale is defined to be the fwhm divided by """ + `NYQUIST_SAMPLING_RATE` + """.
+pixel scale. The pixel scale is defined by the im_pxsc parameter.
+
+im_pixsc: this gives the common pixel scale (in arcsec) used for the regridding of the images in the im_regrid. It is a good idea the pixel scale and angular resolution of the images in the regrid step to conform to the Nyquist sampling rate: angular resolution = """ + NYQUIST_SAMPLING_RATE + """ * im_pixsc
 
 seds: it produces the spectral energy distribution on a pixel-by-pixel
 basis, on the regridded images.
@@ -207,7 +211,7 @@ executions of the script are removed and no processing is done.
 help: if this parameter is present, this message will be displayed and no 
 processing will be done.
 
-NOTE: the following keywords must be present, along with a comment containing the units (where applicable), for optimal image processing:
+NOTE: the following keywords must be present in all images, along with a comment containing the units (where applicable), for optimal image processing:
 
     BUNIT: this provides the physical units of the array values (i.e. the flux unit).
     CRVAL1: it contains the RA (in degrees) to which the images will be registered by im_reg
@@ -230,7 +234,7 @@ def parse_command_line():
 
     """
 
-    global phys_size
+    global ang_size
     global directory
     global do_conversion
     global do_registration
@@ -240,9 +244,11 @@ def parse_command_line():
     global do_cleanup
     global main_reference_image
     global fwhm_input
+    global use_kernels
+    global im_pixsc
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["dir=", "ang_size=", "flux_conv", "im_conv", "im_reg", "im_ref=", "im_conv", "fwhm=", "im_regrid", "seds", "cleanup", "help"])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["dir=", "ang_size=", "flux_conv", "im_conv", "im_reg", "im_ref=", "im_conv", "fwhm=", "kernels", "im_pixsc=", "im_regrid", "seds", "cleanup", "help"])
     except getopt.GetoptError:
         print("An error occurred. Check your parameters and try again.")
         sys.exit(2)
@@ -251,7 +257,7 @@ def parse_command_line():
             print_usage()
             sys.exit()
         elif opt in ("--ang_size"):
-            phys_size = float(arg)
+            ang_size = float(arg)
         elif opt in ("--directory"):
             directory = arg
             if (not os.path.isdir(directory)):
@@ -273,6 +279,10 @@ def parse_command_line():
             main_reference_image = arg
         elif opt in ("--fwhm"):
             fwhm_input = float(arg)
+        elif opt in ("--kernels"):
+            use_kernels = True
+        elif opt in ("--im_pixsc"):
+            im_pixsc = float(arg)
 
     if (main_reference_image != ''):
         try:
@@ -308,10 +318,10 @@ def get_conversion_factor(header, instrument):
 
 
     if (instrument == 'IRAC'):
-        conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
+        conversion_factor = (MJY_PER_SR_TO_JY_PER_ARCSEC2) * (pixelscale**2)
 
     elif (instrument == 'MIPS'):
-        conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
+        conversion_factor = (MJY_PER_SR_TO_JY_PER_ARCSEC2) * (pixelscale**2)
 
     elif (instrument == 'GALEX'):
         wavelength = u.um.to(u.angstrom, float(header['WAVELNTH']))
@@ -405,7 +415,7 @@ def register_images(images_with_headers):
     hdr = fits.getheader(main_reference_image, 0)
     lngref_input = hdr['CRVAL1']
     latref_input = hdr['CRVAL2']
-    width_and_height = u.arcsec.to(u.deg, phys_size)
+    width_and_height = u.arcsec.to(u.deg, ang_size)
 
     for i in range(0, len(images_with_headers)):
 
@@ -447,41 +457,12 @@ def convolve_images_psf(images_with_headers):
         #reading the science image:
         science_image = fits.getdata(input_filename)
 
-        # if using a kernel image, then we first regrid the kernel to the same as in the science image, and we re-center the kernel:
-
-        # create a fake image "apixel_kernel.fits"
-        # the original kernel has a grid of 3645*3645 pixels and centered at (1822, 1822)
-        # ncols = nlines = initial_number_of_rows * initial_pixelsize_of_the_kernel  / science_image_pixelsize
-        # in the current case: 3645* 0.25 (arcsecs per pixel) / 2 (arcsecs per pixel) = 455.62
-        artdata.mkpattern(input="apixel_kernel.fits", output="apixel_kernel.fits", pattern="constant", option="replace",v1=0., v2=1., size=1, title="", pixtype="real", ndim=2, ncols=455,nlines=455,n3=1, n4=1, n5=1, n6=1, n7=1, header="")
-
-        #Then, tag the desired WCS in this fake image:
-        #
-        # unlearn some iraf tasks
-        iraf.unlearn('ccsetwcs')
-        #xref = yref = ncols/2 = nlines/2
-        #xmag, ymag = pixel scale of science image
-        iraf.ccsetwcs(images="apixel_kernel.fits", database="", solution="", xref=227.5, yref=227.5, xmag=2, ymag=2, xrotati=0.,yrotati=0.,lngref=0, latref=0, lngunit="hours", latunit="degrees", transpo="no", project="tan", coosyst="j2000", update="yes", pixsyst="logical", verbose="yes")
-
-        # Then, register the fits file of interest to the WCS of the fake fits file
-        #
-        # unlearn some iraf tasks
-        iraf.unlearn('wregister')
-
-        iraf.wregister(input="Kernel_HiRes_PACS_70_to_SPIRE_500.fits", reference="apixel_kernel.fits", output="Kernel_P70_2_S500.fits", fluxconserve="yes")
-
-        # then we get the data from the kernel
+        # reading the kernel
         kernel_image = pyfits.getdata('Kernel_P70_2_S500.fits')
-
-        #several ways to do the convolution, but is best to use number 3 or 4:
 
         #3. 
         result3 = astropy.nddata.convolution.convolve.convolve(science_image, kernel_image) # got a segmentation fault - it needs an odd number of columns/rows for the kernel
         pyfits.writeto('science_image_convolved_3.fits',result3)
-
-        #4. 
-        result4 = astropy.nddata.convolution.convolve.convolve_fft(science_image,kernel_image) # worked OK - was the fastest thus far
-        pyfits.writeto('science_image_convolved_4.fits',result4) 
 
 def convolve_images(images_with_headers):
     """
@@ -498,9 +479,6 @@ def convolve_images(images_with_headers):
 
     for i in range(0, len(images_with_headers)):
 
-        native_pixelscale = u.deg.to(u.arcsec, abs(float(images_with_headers[i][1]['CDELT1'])))
-        sigma_input = fwhm_input / (2* math.sqrt(2*math.log (2) ) * native_pixelscale)
-
         original_filename = os.path.basename(images_with_headers[i][2])
         original_directory = os.path.dirname(images_with_headers[i][2])
         new_directory = original_directory + "/convolved/"
@@ -510,23 +488,34 @@ def convolve_images(images_with_headers):
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
-        # NOTETOSELF: there has been a loss of data from the data cubes at an earlier
-        # step. The presence of 'EXTEND' and 'DSETS___' keywords in the header no
-        # longer means that there is any data in hdulist[1].data. I am using a
-        # workaround for now, but this needs to be looked at.
-        hdulist = fits.open(input_filename)
-        header = hdulist[0].header
-        image_data = hdulist[0].data
-        hdulist.close()
+        # Check if there is a corresponding PSF kernel.
+        # If so, then use that to perform the convolution.
+        # Otherwise, we convolve with a Gaussian kernel.
+        kernel_filename = original_directory + "/kernels/" + original_filename + "_kernel.fits"
+        print("Looking for " + kernel_filename)
+        if use_kernels and os.path.exists(kernel_filename):
+            print("Found a kernel; will convolve with it shortly.")
+        else:
+            native_pixelscale = u.deg.to(u.arcsec, abs(float(images_with_headers[i][1]['CDELT1'])))
+            sigma_input = fwhm_input / (2* math.sqrt(2*math.log (2) ) * native_pixelscale)
 
-        gaus_kernel_inp = make_kernel([3,3], kernelwidth=sigma_input, kerneltype='gaussian', trapslope=None, force_odd=True)
+            # NOTETOSELF: there has been a loss of data from the data cubes at an earlier
+            # step. The presence of 'EXTEND' and 'DSETS___' keywords in the header no
+            # longer means that there is any data in hdulist[1].data. I am using a
+            # workaround for now, but this needs to be looked at.
+            hdulist = fits.open(input_filename)
+            header = hdulist[0].header
+            image_data = hdulist[0].data
+            hdulist.close()
 
-        # Do the convolution and save it as a new .fits file
-        conv_result = convolve(image_data, gaus_kernel_inp)
-        header['FWHM'] = (fwhm_input, 'The FWHM value used in the convolution step.')
+            gaus_kernel_inp = make_kernel([3,3], kernelwidth=sigma_input, kerneltype='gaussian', trapslope=None, force_odd=True)
 
-        hdu = fits.PrimaryHDU(conv_result, header)
-        hdu.writeto(convolved_filename, clobber=True)
+            # Do the convolution and save it as a new .fits file
+            conv_result = convolve(image_data, gaus_kernel_inp)
+            header['FWHM'] = (fwhm_input, 'The FWHM value used in the convolution step.')
+
+            hdu = fits.PrimaryHDU(conv_result, header)
+            hdu.writeto(convolved_filename, clobber=True)
 
 def create_data_cube(images_with_headers):
     """
@@ -576,14 +565,14 @@ def resample_images(images_with_headers):
 
     """
 
-    width_input = phys_size / (fwhm_input / NYQUIST_SAMPLING_RATE) 
+    width_input = ang_size / (im_pixsc) 
     height_input = width_input
 
     hdr = fits.getheader(main_reference_image, 0)
     lngref_input = hdr['CRVAL1']
     latref_input = hdr['CRVAL2']
 
-    montage.commands.mHdr(`lngref_input` + ' ' + `latref_input`, width_input, 'grid_final_resample_header', system='eq', equinox=2000.0, height=height_input, pix_size=fwhm_input/NYQUIST_SAMPLING_RATE, rotation=0.)
+    montage.commands.mHdr(`lngref_input` + ' ' + `latref_input`, width_input, 'grid_final_resample_header', system='eq', equinox=2000.0, height=height_input, pix_size=im_pixsc, rotation=0.)
 
     for i in range(0, len(images_with_headers)):
         original_filename = os.path.basename(images_with_headers[i][2])
@@ -689,7 +678,7 @@ def cleanup_output_files():
             shutil.rmtree(subdir)
 
 if __name__ == '__main__':
-    phys_size = ''
+    ang_size = ''
     directory = ''
     main_reference_image = ''
     fwhm_input = ''
@@ -699,6 +688,8 @@ if __name__ == '__main__':
     do_resampling = False
     do_seds = False
     do_cleanup = False
+    use_kernels = False
+    im_pixsc = ''
 
     parse_command_line()
 
