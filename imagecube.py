@@ -277,7 +277,6 @@ def parse_command_line():
             print("The file " + main_reference_image + " could not be found in the directory " + directory)
             sys.exit()
 
-# NOTETOSELF: if the instrument is not found, the user can provide the value themselves
 def get_conversion_factor(header, instrument):
     """
     Returns the factor that is necessary to convert an image's native "flux 
@@ -305,19 +304,13 @@ def get_conversion_factor(header, instrument):
 
 
     if (instrument == 'IRAC'):
-        #print("Pixel scale: " + `pixelscale`)
-        # NOTEOTSELF: This is a hardcoded value from what Sophia gave me.
-        # I would like to see if we could also obtain this from units.
-        # The native "flux unit" is MJy/sr and we convert it to Jy/pixel
         conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
 
     elif (instrument == 'MIPS'):
-        #print("Pixel scale: " + `pixelscale`)
         conversion_factor = (MJY_PER_SR_TO_JY_PER_PIXEL) * (pixelscale**2)
 
     elif (instrument == 'GALEX'):
         wavelength = u.um.to(u.angstrom, float(header['WAVELNTH']))
-        #print("Speed of light: " + `constants.c.to('um/s').value`)
         f_lambda_con = 0
         # I am using a < comparison here to account for the possibility that the given
         # wavelength is not EXACTLY 1520 AA or 2310 AA
@@ -326,11 +319,8 @@ def get_conversion_factor(header, instrument):
         else:
             f_lambda_con = NUV_LAMBDA_CON
         conversion_factor = ((JY_CONVERSION) * f_lambda_con * wavelength**2) / (constants.c.to('angstrom/s').value)
-        #print("lambda^2/c = " + `(wavelength**2) / (constants.c.to('angstrom/s').value)`)
 
-    # This calculation comes from the definition of the magnitude system.
     elif (instrument == '2MASS'):
-        #print("MAGZP: " + `header['MAGZP']`)
         fvega = 0
         if (header['FILTER'] == 'j'):
             fvega = FVEGA_J
@@ -345,13 +335,10 @@ def get_conversion_factor(header, instrument):
         # keyword
         if ('BUNIT' in header):
             if (header['BUNIT'].lower() != 'jy/pixel'):
-                # NOTETOSELF: ask for more input here if necessary
                 print("Instrument is PACS, but Jy/pixel is not being used in BUNIT.")
         conversion_factor = 1;
 
     elif (instrument == 'SPIRE'):
-        print("SPIRE: " + header['WAVELNTH'])
-        print("pixelscale: " + `pixelscale`)
         wavelength = float(header['WAVELNTH'])
         if (wavelength == 250):
             conversion_factor = (pixelscale**2) / S250_BEAM_AREA
@@ -360,7 +347,6 @@ def get_conversion_factor(header, instrument):
         elif (wavelength == 500):
             conversion_factor = (pixelscale**2) / S500_BEAM_AREA
     
-    print("Return: " + `conversion_factor`)
     return conversion_factor
 
 def convert_images(images_with_headers):
@@ -377,10 +363,8 @@ def convert_images(images_with_headers):
 
     """
 
-    print("Converting images")
     for i in range(0, len(images_with_headers)):
         instrument = images_with_headers[i][1]['INSTRUME']
-        print('FILE: ' + images_with_headers[i][2])
         conversion_factor = get_conversion_factor(images_with_headers[i][1], instrument)
 
         # Some manipulation of filenames and directories
@@ -397,46 +381,8 @@ def convert_images(images_with_headers):
         images_with_headers[i][1]['BUNIT'] = 'Jy/pixel'
         images_with_headers[i][1]['JYPXFACT'] = (conversion_factor, 'Factor to convert original BUNIT into Jy/pixel.')
         hdu = fits.PrimaryHDU(converted_data_array, images_with_headers[i][1])
-        print("Creating " + converted_filename)
         hdu.writeto(converted_filename, clobber=True)
 
-def get_herschel_mean(images_with_headers, keyword):
-    """
-    Checks all of the FITS images with data from Herschel instruments
-    (currently PACS and SPIRE) and returns the mean value of the given
-    FITS header keyword from all the relevant images.
-
-    Parameters
-    ----------
-    images_with_headers: zipped list structure
-        A structure containing headers and image data for all FITS input
-        images.
-    keyword: string
-        The header keyword for which the mean value will be calculated.
-
-    Returns
-    -------
-    return_value: float
-        The mean of the values of the given header keyword for all images
-        with data from Herschel instruments.
-    """
-
-    print("get_herschel_mean(" + keyword + ")")
-    values = []
-    return_value = 0
-    for i in range(0, len(images_with_headers)):
-        instrument = images_with_headers[i][1]['INSTRUME']
-        if (instrument == 'PACS' or instrument == 'SPIRE'):
-            value = images_with_headers[i][1][keyword]
-            values.append(value)
-    return_value = np.mean(values)
-    return return_value
-
-# NOTETOSELF: try to do this from the converted_data array first.
-# If that fails, then we can always just read in the _converted.fits files that were
-# also created by convert_images().
-# NOTETOSELF: Sophia told me that we need the single RA/dec value that gets used
-# later (in the resampling step, I believe) in this step as well.
 def register_images(images_with_headers):
     """
     Registers all of the images to a common WCS
@@ -449,31 +395,14 @@ def register_images(images_with_headers):
 
     """
 
-    print("Registering images")
-    print("phys_size: " + `phys_size`)
-
     hdr = fits.getheader(main_reference_image, 0)
     lngref_input = hdr['CRVAL1']
     latref_input = hdr['CRVAL2']
     width_and_height = u.arcsec.to(u.deg, phys_size)
-    print("Width and height: " + `width_and_height`)
-
-    #if (ra_input != ''):
-        #lngref_input = ra_input
-    #else:
-        #lngref_input = get_herschel_mean(images_with_headers, 'CRVAL1')
-
-    #if (dec_input != ''):
-        #latref_input = dec_input
-    #else:
-        #latref_input = get_herschel_mean(images_with_headers, 'CRVAL2')
 
     for i in range(0, len(images_with_headers)):
 
         native_pixelscale = u.deg.to(u.arcsec, abs(float(images_with_headers[i][1]['CDELT1'])))
-        print("Native pixel scale: " + `native_pixelscale`)
-        print("Instrument: " + `images_with_headers[i][1]['INSTRUME']`)
-        #print("BUNIT: " + `images_with_headers[i][1]['BUNIT']`)
 
         original_filename = os.path.basename(images_with_headers[i][2])
         original_directory = os.path.dirname(images_with_headers[i][2])
@@ -482,9 +411,6 @@ def register_images(images_with_headers):
         registered_filename = new_directory + original_filename  + "_registered.fits"
         input_directory = original_directory + "/converted/"
         input_filename = input_directory + original_filename  + "_converted.fits"
-        print("Artificial filename: " + artificial_filename)
-        print("Registered filename: " + registered_filename)
-        print("Input filename: " + input_filename)
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
@@ -563,15 +489,10 @@ def convolve_images(images_with_headers):
 
     """
 
-    print("Convolving images")
-    print("fwhm_input = " + `fwhm_input`)
-
     for i in range(0, len(images_with_headers)):
 
         native_pixelscale = u.deg.to(u.arcsec, abs(float(images_with_headers[i][1]['CDELT1'])))
         sigma_input = fwhm_input / (2* math.sqrt(2*math.log (2) ) * native_pixelscale)
-        print("Native pixel scale: " + `native_pixelscale`)
-        print("Instrument: " + `images_with_headers[i][1]['INSTRUME']`)
 
         original_filename = os.path.basename(images_with_headers[i][2])
         original_directory = os.path.dirname(images_with_headers[i][2])
@@ -579,8 +500,6 @@ def convolve_images(images_with_headers):
         convolved_filename = new_directory + original_filename  + "_convolved.fits"
         input_directory = original_directory + "/registered/"
         input_filename = input_directory + original_filename  + "_registered.fits"
-        print("Convolved filename: " + convolved_filename)
-        print("Input filename: " + input_filename)
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
@@ -591,10 +510,6 @@ def convolve_images(images_with_headers):
         hdulist = fits.open(input_filename)
         header = hdulist[0].header
         image_data = hdulist[0].data
-        #if ('EXTEND' in header and 'DSETS___' in header):
-            #image_data = hdulist[1].data
-        #else:
-            #image_data = hdulist[0].data
         hdulist.close()
 
         gaus_kernel_inp = make_kernel([3,3], kernelwidth=sigma_input, kerneltype='gaussian', trapslope=None, force_odd=True)
@@ -604,13 +519,11 @@ def convolve_images(images_with_headers):
         header['FWHM'] = (fwhm_input, 'The FWHM value used in the convolution step.')
 
         hdu = fits.PrimaryHDU(conv_result, header)
-        print("Creating " + convolved_filename)
         hdu.writeto(convolved_filename, clobber=True)
 
 def create_data_cube(images_with_headers):
     """
     Creates a data cube from the provided images.
-
 
     Parameters
     ----------
@@ -623,12 +536,10 @@ def create_data_cube(images_with_headers):
     Currently we are just using the header of the first input image.
     This should be changed to something more appropriate.
     """
-    print("Creating a data cube.")
     resampled_images = []
     resampled_headers = []
 
     new_directory = directory + "/datacube/"
-    print("New directory: " + new_directory)
     if not os.path.exists(new_directory):
         os.makedirs(new_directory)
 
@@ -658,8 +569,6 @@ def resample_images(images_with_headers):
 
     """
 
-    print("Resampling images.")
-
     width_input = phys_size / (fwhm_input / NYQUIST_SAMPLING_RATE) 
     height_input = width_input
 
@@ -676,8 +585,6 @@ def resample_images(images_with_headers):
         resampled_filename = new_directory + original_filename  + "_resampled.fits"
         input_directory = original_directory + "/convolved/"
         input_filename = input_directory + original_filename  + "_convolved.fits"
-        print("Resampled filename: " + resampled_filename)
-        print("Input filename: " + input_filename)
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
@@ -710,7 +617,6 @@ def output_seds(images_with_headers):
         input_filename = input_directory + original_filename  + "_resampled.fits"
         wavelength = images_with_headers[i][1]['WAVELNTH']
         wavelengths.append(wavelength)
-        #print("Input filename: " + input_filename)
         if not os.path.exists(new_directory):
             os.makedirs(new_directory)
 
@@ -724,57 +630,26 @@ def output_seds(images_with_headers):
     sed_data = []
 
     for i in range(0, num_wavelengths):
-        #print(`wavelengths[i]`)
         for j in range(len(all_image_data[i])):
             for k in range(len(all_image_data[i][j])):
                 sed_data.append((int(j), int(k), wavelengths[i], all_image_data[i][j][k]))
-                #print("(" + `j` + "," + `k` + ")" + '\t' + `all_image_data[i][j][k]` + ' ' + `wavelengths[i]`)
 
-    #print(`sorted(sed_data)`)
     data = np.copy(sorted(sed_data))
-    #np.savetxt('test.out', data, delimiter=',')
     np.savetxt('test.out', data, fmt='%d,%d,%f,%f', header='x, y, wavelength (um), flux units (Jy/pixel)')
-    #print("len(data): " + `len(data)`)
     num_seds = int(len(data) / num_wavelengths)
-    #print("Number of SEDs to create: " + `num_seds`)
-    # just the wavelengths:
-    #print(`data[:,2]`)
-    # just the z-values:
-    #print(`data[:,3]`)
-    # for one wavelength:
-    #print(`data[:,2][0:num_wavelengths]`)
-    #print(`data[:,3][0:num_wavelengths]`)
 
-    # for all wavelengths:
     with console.ProgressBarOrSpinner(num_seds, "Creating SEDs") as bar:
         for i in range(0, num_seds):
-        #for i in range(0, 5):
-            #print(`i`)
 
             # change to the desired fonts
             rc('font', family='Times New Roman')
             rc('text', usetex=True)
             
-            # wavelength
-            #a = data[:,2] 								
             wavelength_values = data[:,2][i*num_wavelengths:(i+1)*num_wavelengths]
-            # flux
-            #b = data[:,1]/1e20							
-            #b = data[:,2]
             flux_values = data[:,3][i*num_wavelengths:(i+1)*num_wavelengths]
-            #b = data[:,3][i:i+num_wavelengths]
             x_values = data[:,0][i*num_wavelengths:(i+1)*num_wavelengths]
             y_values = data[:,1][i*num_wavelengths:(i+1)*num_wavelengths]
 
-            #print("\tx-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `x_values`)
-            #print("\ty-values (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `y_values`)
-            #print("\tWavelength (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `wavelength_values`)
-            #print("\tFlux (" + `i*num_wavelengths` + "," + `(i+1)*num_wavelengths` + "): " + `flux_values`)
-
-            #for w in range(0, num_wavelengths):
-                #print(`x_values[w]` + "\t" + `y_values[w]` + "\t" + `wavelength_values[w]` + "\t" + `flux_values[w]`)
-
-            # figure(1)
             pylab.figure(i)
             pylab.scatter(wavelength_values,flux_values)
 
@@ -787,22 +662,6 @@ def output_seds(images_with_headers):
 
             pylab.hold(True)
 
-            # load the second data set
-            #data2 = np.loadtxt('Te/SPEC_4.out', comments='%',usecols = (1,2)) 	
-            #a2 = data2[:,0]
-            #b2 = data2[:,1]/1e20
-
-            # overplot in figure(1)
-            #pylab.plot(a2,b2, 'r:',  markersize=3.0, linewidth=2.0, label='Te')	
-
-            # load the third data set
-            #data3 = np.loadtxt('Teff/SPEC_4.out', comments='%',usecols = (1,2)) 	
-            #a3 = data3[:,0]
-            #b3 = data3[:,1]/1e20
-
-            # overplot in figure(1)
-            #pylab.plot(a3,b3, 'b-.',  markersize=3.0, linewidth=2.0, label='Teff')	
-
             pylab.legend()
             pylab.savefig(new_directory + '/' + `int(x_values[0])` + '_' + `int(y_values[0])` + '_sed.eps')
             #pylab.show()
@@ -813,8 +672,6 @@ def cleanup_output_files():
     Removes files that have been generated by previous executions of the
     script.
     """
-
-    print("Cleaning up output files.")
 
     import shutil
 
@@ -856,7 +713,6 @@ if __name__ == '__main__':
 
     for i in all_files:
         hdulist = fits.open(i)
-        #hdulist.info()
         header = hdulist[0].header
         # NOTETOSELF: The check for a data cube needs to be another function due to complexity. Check the
         # hdulist.info() values to see how much information is contained in the file.
@@ -867,16 +723,11 @@ if __name__ == '__main__':
             image = hdulist[1].data
         else:
             image = hdulist[0].data
-        #filename = hdulist.filename()
         # Strip the .fit or .fits extension from the filename so we can append things to it
         # later on
         filename = os.path.splitext(hdulist.filename())[0]
         hdulist.close()
         wavelength = header['WAVELNTH']
-        #wavelength_units = header.comments['WAVELNTH']
-        #print("Wavelength " + `wavelength_microns` + "; Sample image value: " + `image[30][30]`)
-        # NOTETOSELF: don't overwrite the header value here. Either create a new keyword,
-        # say, WLMICRON, or include the original value in a comment.
         header['WAVELNTH'] = (wavelength, 'micron')
         image_data.append(image)
         headers.append(header)
