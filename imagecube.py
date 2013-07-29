@@ -200,7 +200,7 @@ kernels: the user provides kernel FITS images for each of the input images. If a
 im_regrid: it performs regridding of the convolved images to a common
 pixel scale. The pixel scale is defined by the im_pxsc parameter.
 
-im_pixsc: this gives the common pixel scale (in arcsec) used for the regridding of the images in the im_regrid. It is a good idea the pixel scale and angular resolution of the images in the regrid step to conform to the Nyquist sampling rate: angular resolution = """ + NYQUIST_SAMPLING_RATE + """ * im_pixsc
+im_pixsc: this gives the common pixel scale (in arcsec) used for the regridding of the images in the im_regrid. It is a good idea the pixel scale and angular resolution of the images in the regrid step to conform to the Nyquist sampling rate: angular resolution = """ + `NYQUIST_SAMPLING_RATE` + """ * im_pixsc
 
 seds: it produces the spectral energy distribution on a pixel-by-pixel
 basis, on the regridded images.
